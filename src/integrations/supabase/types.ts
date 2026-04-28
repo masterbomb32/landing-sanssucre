@@ -14,13 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      page_visits: {
+        Row: {
+          created_at: string
+          id: string
+          path: string
+          referrer: string | null
+          user_agent: string | null
+          visitor_hash: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          path: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_hash: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          path?: string
+          referrer?: string | null
+          user_agent?: string | null
+          visitor_hash?: string
+        }
+        Relationships: []
+      }
+      signups: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          mobile: string
+          name: string
+          redeemed_at: string | null
+          redemption_code: string
+          reward_choice: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          mobile: string
+          name: string
+          redeemed_at?: string | null
+          redemption_code: string
+          reward_choice: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          mobile?: string
+          name?: string
+          redeemed_at?: string | null
+          redemption_code?: string
+          reward_choice?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      redeem_signup: {
+        Args: { p_code: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          mobile: string
+          name: string
+          redeemed_at: string
+          redemption_code: string
+          reward_choice: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
