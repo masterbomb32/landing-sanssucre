@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedeemRouteImport } from './routes/redeem'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -17,6 +18,11 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
 
+const RedeemRoute = RedeemRouteImport.update({
+  id: '/redeem',
+  path: '/redeem',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -87,17 +96,26 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/privacy'
+    | '/redeem'
     | '/admin/copy'
     | '/receipt/$code'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/privacy' | '/admin/copy' | '/receipt/$code' | '/admin'
+  to:
+    | '/'
+    | '/login'
+    | '/privacy'
+    | '/redeem'
+    | '/admin/copy'
+    | '/receipt/$code'
+    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/login'
     | '/privacy'
+    | '/redeem'
     | '/admin/copy'
     | '/receipt/$code'
     | '/admin/'
@@ -108,11 +126,19 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  RedeemRoute: typeof RedeemRoute
   ReceiptCodeRoute: typeof ReceiptCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redeem': {
+      id: '/redeem'
+      path: '/redeem'
+      fullPath: '/redeem'
+      preLoaderRoute: typeof RedeemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -182,6 +208,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  RedeemRoute: RedeemRoute,
   ReceiptCodeRoute: ReceiptCodeRoute,
 }
 export const routeTree = rootRouteImport
