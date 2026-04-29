@@ -21,6 +21,8 @@ import { toast } from "sonner";
 
 import { REWARDS } from "@/lib/rewards";
 import { createSignup } from "@/server/signup.functions";
+import { siteCopy } from "@/lib/site-copy";
+import { Link } from "@tanstack/react-router";
 
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
 
@@ -168,14 +170,17 @@ export function SignupForm() {
         />
 
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            We value your data privacy. Used only for your reward and Sans Sucre updates — never
-            shared.
-          </p>
           <Button type="submit" size="lg" className="w-full" disabled={submitting}>
             {submitting ? <Loader2 className="animate-spin" /> : null}
-            Claim my reward
+            {siteCopy.form.submit}
           </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            {siteCopy.form.consentPrefix}{" "}
+            <Link to="/privacy" className="text-primary underline underline-offset-2">
+              {siteCopy.form.consentLinkLabel}
+            </Link>
+            . {siteCopy.form.fineprint}
+          </p>
         </div>
       </form>
     </Form>

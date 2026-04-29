@@ -3,6 +3,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import appCss from "../styles.css?url";
 import heroWebp from "@/assets/red-velvet-hero.webp";
 import { Toaster } from "@/components/ui/sonner";
+import { siteCopy } from "@/lib/site-copy";
 
 function NotFoundComponent() {
   return (
@@ -31,18 +32,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Sans Sucre — Opening Day Rewards" },
-      {
-        name: "description",
-        content:
-          "Join Sans Sucre's opening day. Sign up, pick a reward, and we'll save it for you.",
-      },
-      { name: "author", content: "Sans Sucre" },
-      { property: "og:title", content: "Sans Sucre — Opening Day Rewards" },
-      {
-        property: "og:description",
-        content: "Sign up, pick a reward, and visit us on opening day to claim it.",
-      },
+      { title: siteCopy.meta.title },
+      { name: "description", content: siteCopy.meta.description },
+      { name: "author", content: siteCopy.brand.name },
+      { property: "og:title", content: siteCopy.meta.title },
+      { property: "og:description", content: siteCopy.meta.description },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

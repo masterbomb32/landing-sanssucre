@@ -4,24 +4,20 @@ import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/sanssucre-logo.png";
 import heroWebp from "@/assets/red-velvet-hero.webp";
 import heroPng from "@/assets/red-velvet-hero.png";
+import metroLogo from "@/assets/metro-logo.png";
+import atcLogo from "@/assets/atc-logo.png";
 import { SignupForm } from "@/components/signup-form";
 import { ShareButton } from "@/components/share-button";
 import { useTrackVisit } from "@/hooks/use-track-visit";
+import { siteCopy } from "@/lib/site-copy";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Sans Sucre — Opening Day Rewards" },
-      {
-        name: "description",
-        content:
-          "Join Sans Sucre's opening day. Sign up, pick a reward, visit the shop to claim it.",
-      },
-      { property: "og:title", content: "Sans Sucre — Opening Day Rewards" },
-      {
-        property: "og:description",
-        content: "Sign up, pick a reward, and visit us on opening day to claim it.",
-      },
+      { title: siteCopy.meta.title },
+      { name: "description", content: siteCopy.meta.description },
+      { property: "og:title", content: siteCopy.meta.title },
+      { property: "og:description", content: siteCopy.meta.description },
     ],
   }),
   component: Index,
@@ -82,23 +78,45 @@ function Index() {
               fetchPriority="high"
             />
             <p className="mt-8 font-display text-xs uppercase sm:mt-10 sm:text-sm tracking-[0.35em] text-primary sm:text-sm">
-              Grand Opening
+              {siteCopy.hero.eyebrow}
             </p>
             <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl">
-              A sweet welcome,
+              {siteCopy.hero.headline.line1}
               <br />
-              <span className="text-primary">just for you.</span>
+              <span className="text-primary">{siteCopy.hero.headline.line2}</span>
             </h1>
             <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/80 sm:text-lg">
-              Reserve your reward in under a minute. Visit Sans Sucre on opening day and we'll have
-              something sweet waiting.
+              {siteCopy.hero.sub}
             </p>
+
+            {/* Location chip — Metro × ATC */}
+            <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-3 rounded-full border border-border/60 bg-background/70 px-4 py-2 backdrop-blur-sm">
+              <img
+                src={metroLogo}
+                alt="Metro Supermarket"
+                className="h-6 w-auto sm:h-7"
+                loading="lazy"
+              />
+              <span className="text-xs text-muted-foreground" aria-hidden>
+                ×
+              </span>
+              <img
+                src={atcLogo}
+                alt="Alabang Town Center"
+                className="h-6 w-auto sm:h-7"
+                loading="lazy"
+              />
+              <span className="text-xs font-medium text-foreground/80 sm:text-sm">
+                {siteCopy.hero.location}
+              </span>
+            </div>
+
             <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
               <a
                 href="#claim"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
               >
-                Reserve my reward →
+                {siteCopy.hero.primaryCta}
               </a>
               <ShareButton />
             </div>
@@ -109,33 +127,33 @@ function Index() {
       {/* Form */}
       <section ref={formRef} id="claim" className="mx-auto max-w-3xl px-5 py-10 sm:py-16">
         <div className="mb-8 text-center">
-          <h2 className="font-display text-2xl font-bold sm:text-4xl">Reserve your reward</h2>
-          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Tell us where to send your unique code. Show it at the shop on opening day.
-          </p>
+          <h2 className="font-display text-2xl font-bold sm:text-4xl">{siteCopy.form.heading}</h2>
+          <p className="mt-2 text-sm text-muted-foreground sm:text-base">{siteCopy.form.sub}</p>
         </div>
         <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-8">
           <SignupForm />
         </div>
-        <div className="mt-6 space-y-2 text-center text-xs text-muted-foreground">
-          <p>
-            We respect your privacy. Your details are used only to deliver your reward and
-            occasional Sans Sucre updates. We never sell or share your data.{" "}
-            <Link to="/privacy" className="text-primary underline underline-offset-2">
-              Read our privacy notice
-            </Link>
-            .
-          </p>
-          <p>By signing up you agree to receive updates from Sans Sucre. One reward per person.</p>
-        </div>
       </section>
 
-      <footer className="border-t bg-secondary/40 py-8 text-center text-sm text-muted-foreground">
-        <img src={logo} alt="Sans Sucre" width={140} height={36} className="mx-auto mb-3 h-7 w-auto opacity-80" loading="lazy" />
-        <p>© {new Date().getFullYear()} Sans Sucre · sanssucre.ph</p>
+      <footer className="border-t bg-secondary/40 py-10 text-center text-sm text-muted-foreground">
+        <img
+          src={logo}
+          alt="Sans Sucre"
+          width={140}
+          height={36}
+          className="mx-auto mb-4 h-8 w-auto opacity-80"
+          loading="lazy"
+        />
+        <div className="mx-auto mb-4 flex items-center justify-center gap-3">
+          <img src={metroLogo} alt="Metro Supermarket" className="h-8 w-auto" loading="lazy" />
+          <span className="text-xs text-muted-foreground" aria-hidden>×</span>
+          <img src={atcLogo} alt="Alabang Town Center" className="h-8 w-auto" loading="lazy" />
+        </div>
+        <p className="mx-auto max-w-md px-5 text-xs sm:text-sm">{siteCopy.footer.location}</p>
+        <p className="mt-4">© {new Date().getFullYear()} Sans Sucre · sanssucre.ph</p>
         <p className="mt-1">
           <Link to="/privacy" className="hover:text-foreground">
-            Privacy
+            {siteCopy.footer.privacyLabel}
           </Link>
         </p>
       </footer>
@@ -148,7 +166,7 @@ function Index() {
           formVisible ? "pointer-events-none translate-y-20 opacity-0" : "translate-y-0 opacity-100"
         }`}
       >
-        Reserve now
+        {siteCopy.stickyCta}
       </a>
     </main>
   );
