@@ -19,6 +19,7 @@ interface Props {
 export function Scanner({ onResult, paused }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const pausedRef = useRef(!!paused);
   const lastResultRef = useRef<{ text: string; at: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -44,44 +45,57 @@ export function Scanner({ onResult, paused }: Props) {
           setError("This browser does not support camera access. Use manual entry below.");
           return;
         }
-        const constraints: MediaStreamConstraints = {
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-          audio: false,
-        };
-        const controls = await reader.decodeFromConstraints(
-          constraints,
-          videoRef.current!,
-          (result) => {
-            if (!result || pausedRef.current) return;
-            const text = result.getText().trim().toUpperCase();
-            if (!text) return;
-            const last = lastResultRef.current;
-            const now = Date.now();
-            // Debounce identical reads within 1.5s
-            if (last && last.text === text && now - last.at < 1500) return;
-            lastResultRef.current = { text, at: now };
-            onResult(text);
-          },
-        );
+        // 1. Get the stream ourselves so we control playback.
+        let stream: MediaStream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+            audio: false,
+          });
+        } catch (err: any) {
+          // Retry without resolution constraints if the device rejected them.
+          if (err?.name === "OverconstrainedError" || err?.name === "NotReadableError") {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          } else {
+            throw err;
+          }
+        }
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        const v = videoRef.current;
+        if (!v) return;
+        v.srcObject = stream;
+        v.setAttribute("playsinline", "true");
+        v.muted = true;
+        try {
+          await v.play();
+          setReady(true);
+        } catch {
+          setNeedsTap(true);
+        }
+        // 2. Now hand the playing video to zxing for continuous decoding.
+        const controls = await reader.decodeFromVideoElement(v, (result) => {
+          if (!result || pausedRef.current) return;
+          const text = result.getText().trim().toUpperCase();
+          if (!text) return;
+          const last = lastResultRef.current;
+          const now = Date.now();
+          if (last && last.text === text && now - last.at < 1500) return;
+          lastResultRef.current = { text, at: now };
+          onResult(text);
+        });
         if (cancelled) {
           controls.stop();
           return;
         }
         controlsRef.current = controls;
-        // Some browsers (esp. iOS Safari) block autoplay until user gesture.
-        const v = videoRef.current;
-        if (v) {
-          try {
-            await v.play();
-          } catch {
-            setNeedsTap(true);
-          }
-        }
-        setReady(true);
       } catch (e: any) {
         const name = e?.name || "";
         if (name === "NotAllowedError" || name === "PermissionDeniedError") {
@@ -105,6 +119,12 @@ export function Scanner({ onResult, paused }: Props) {
       } catch {
         /* noop */
       }
+      try {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      } catch {
+        /* noop */
+      }
     };
   }, [onResult]);
 
@@ -112,6 +132,7 @@ export function Scanner({ onResult, paused }: Props) {
     try {
       await videoRef.current?.play();
       setNeedsTap(false);
+      setReady(true);
     } catch {
       /* still blocked */
     }
