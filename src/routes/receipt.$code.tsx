@@ -116,15 +116,15 @@ function ReceiptPage() {
               <div className="text-[9px] uppercase tracking-[0.25em] text-muted-foreground">
                 Redemption code
               </div>
-              <div className="mt-2 flex justify-center overflow-hidden">
-                <div className="w-full max-w-[320px] rounded bg-white px-3 py-3">
+              <div className="mt-2 flex justify-center">
+                <div className="w-full rounded bg-white px-2 py-3 sm:px-3">
                   <Barcode
                     value={code}
                     format="CODE128"
-                    height={80}
-                    width={2.2}
+                    height={92}
+                    width={1.35}
                     fontSize={11}
-                    margin={0}
+                    margin={18}
                     displayValue={false}
                     background="#ffffff"
                     lineColor="#000000"
