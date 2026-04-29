@@ -46,6 +46,30 @@ export type Database = {
           },
         ]
       }
+      mailing_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          signup_id: string
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          signup_id: string
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          signup_id?: string
+          source?: string
+        }
+        Relationships: []
+      }
       notification_log: {
         Row: {
           channel: string
