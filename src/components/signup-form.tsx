@@ -167,6 +167,10 @@ export function SignupForm() {
           )}
         />
 
+        <p className="text-xs text-muted-foreground">
+          We value your data privacy. Used only for your reward and Sans Sucre updates — never
+          shared.
+        </p>
         <Button type="submit" size="lg" className="w-full" disabled={submitting}>
           {submitting ? <Loader2 className="animate-spin" /> : null}
           Claim my reward
