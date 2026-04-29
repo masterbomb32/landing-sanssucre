@@ -34,9 +34,11 @@ export function Scanner({ onResult, paused }: Props) {
     let cancelled = false;
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.QR_CODE,
       BarcodeFormat.CODE_128,
+      BarcodeFormat.QR_CODE,
     ]);
+    hints.set(DecodeHintType.TRY_HARDER, true);
+    hints.set(DecodeHintType.ASSUME_CODE_39_CHECK_DIGIT, false);
     const reader = new BrowserMultiFormatReader(hints);
 
     (async () => {
@@ -51,8 +53,8 @@ export function Scanner({ onResult, paused }: Props) {
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
               facingMode: { ideal: "environment" },
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
             },
             audio: false,
           });
@@ -140,7 +142,7 @@ export function Scanner({ onResult, paused }: Props) {
 
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-black">
-      <div className="aspect-[4/3] w-full">
+      <div className="aspect-[16/9] w-full">
         <video
           ref={videoRef}
           className="h-full w-full object-cover"
@@ -150,7 +152,8 @@ export function Scanner({ onResult, paused }: Props) {
         />
       </div>
       {/* Corner brackets overlay */}
-      <div className="pointer-events-none absolute inset-6 rounded-xl">
+      <div className="pointer-events-none absolute inset-x-6 top-1/2 h-24 -translate-y-1/2 rounded-xl border-2 border-white/35">
+        <div className="absolute left-3 right-3 top-1/2 h-px -translate-y-1/2 bg-primary/80" />
         <div className="absolute left-0 top-0 h-8 w-8 border-l-4 border-t-4 border-white/80 rounded-tl-md" />
         <div className="absolute right-0 top-0 h-8 w-8 border-r-4 border-t-4 border-white/80 rounded-tr-md" />
         <div className="absolute bottom-0 left-0 h-8 w-8 border-b-4 border-l-4 border-white/80 rounded-bl-md" />
