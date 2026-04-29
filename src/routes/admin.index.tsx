@@ -395,7 +395,16 @@ function Dashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {!r.redeemed_at && (
+                    {r.redeemed_at ? (
+                      <Link
+                        to="/redeemed/$code"
+                        params={{ code: r.redemption_code }}
+                        target="_blank"
+                        className="text-xs underline underline-offset-2"
+                      >
+                        Thank-you →
+                      </Link>
+                    ) : (
                       <Button size="sm" variant="outline" disabled={busyCode === r.redemption_code} onClick={() => markRedeemed(r.redemption_code)}>
                         {busyCode === r.redemption_code ? <Loader2 className="h-3 w-3 animate-spin" /> : "Redeem"}
                       </Button>
