@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import zxingLib from "@zxing/library";
+import * as zxingLib from "@zxing/library";
 import { Camera, CameraOff } from "lucide-react";
 
-const { DecodeHintType, BarcodeFormat } = zxingLib as typeof import("@zxing/library");
+const { DecodeHintType, BarcodeFormat } = zxingLib;
 
 interface Props {
   onResult: (text: string) => void;
