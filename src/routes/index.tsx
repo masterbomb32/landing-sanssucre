@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import logo from "@/assets/sanssucre-logo.png";
 import heroWebp from "@/assets/red-velvet-hero.webp";
 import heroPng from "@/assets/red-velvet-hero.png";
@@ -28,11 +29,23 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   useTrackVisit("/");
+  const formRef = useRef<HTMLElement | null>(null);
+  const [formVisible, setFormVisible] = useState(false);
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setFormVisible(entry.isIntersecting),
+      { rootMargin: "0px 0px -30% 0px", threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Cinematic full-bleed hero */}
       <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[85vh]">
-        {/* Background image */}
         <picture>
           <source srcSet={heroWebp} type="image/webp" />
           <img
@@ -45,7 +58,6 @@ function Index() {
             height={1080}
           />
         </picture>
-        {/* Warm legibility overlays */}
         <div
           aria-hidden
           className="absolute inset-0 -z-10 bg-gradient-to-b from-background/85 via-background/40 to-background/95 md:bg-gradient-to-r md:from-background/90 md:via-background/55 md:to-transparent"
@@ -55,12 +67,10 @@ function Index() {
           className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-b from-transparent to-background"
         />
 
-        {/* Top bar with share */}
         <div className="mx-auto flex max-w-6xl items-center justify-end px-5 pt-5">
           <ShareButton variant="ghost" className="hidden sm:inline-flex" />
         </div>
 
-        {/* Content */}
         <div className="mx-auto flex max-w-6xl flex-col px-5 pb-16 pt-6 sm:pt-10 md:min-h-[75vh] md:justify-center md:pb-24">
           <div className="max-w-xl">
             <img
@@ -88,7 +98,7 @@ function Index() {
                 href="#claim"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
               >
-                Claim my reward
+                Reserve my reward →
               </a>
               <ShareButton />
             </div>
@@ -97,7 +107,7 @@ function Index() {
       </section>
 
       {/* Form */}
-      <section id="claim" className="mx-auto max-w-3xl px-5 py-10 sm:py-16">
+      <section ref={formRef} id="claim" className="mx-auto max-w-3xl px-5 py-10 sm:py-16">
         <div className="mb-8 text-center">
           <h2 className="font-display text-2xl font-bold sm:text-4xl">Reserve your reward</h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
@@ -130,12 +140,15 @@ function Index() {
         </p>
       </footer>
 
-      {/* Sticky mobile CTA */}
+      {/* Sticky mobile CTA — auto-hides when the form is visible */}
       <a
         href="#claim"
-        className="fixed inset-x-0 bottom-0 z-40 mx-3 mb-3 flex h-12 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground shadow-lg md:hidden"
+        aria-hidden={formVisible}
+        className={`fixed inset-x-0 bottom-0 z-40 mx-3 mb-3 flex h-12 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground shadow-lg transition-all duration-300 md:hidden ${
+          formVisible ? "pointer-events-none translate-y-20 opacity-0" : "translate-y-0 opacity-100"
+        }`}
       >
-        Claim my reward
+        Reserve now
       </a>
     </main>
   );
