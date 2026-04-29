@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Check, AlertTriangle, X, Lock, Loader2 } from "lucide-react";
 import { getReward } from "@/lib/rewards";
+import { formatDateTime, manilaStartOfTodayISO } from "@/lib/format-date";
 import logo from "@/assets/sanssucre-logo.png";
 
 export const Route = createFileRoute("/redeem")({
@@ -62,12 +63,10 @@ function RedeemStation() {
 
   // Today's count
   const loadCount = useCallback(async () => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
     const { count } = await supabase
       .from("signups")
       .select("id", { count: "exact", head: true })
-      .gte("redeemed_at", start.toISOString());
+      .gte("redeemed_at", manilaStartOfTodayISO());
     setTodayCount(count ?? 0);
   }, []);
 
@@ -305,7 +304,7 @@ function ResultCard({ result, onContinue }: { result: Result; onContinue: () => 
         </p>
         <p className="mt-2 text-base">
           This code was redeemed
-          {when && ` on ${when.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}`}.
+          {when && ` on ${formatDateTime(when, { dateStyle: "medium", timeStyle: "short" })} (PHT)`}.
         </p>
         <p className="mt-1 font-mono text-xs text-muted-foreground">{result.code}</p>
         <Button className="mt-5" onClick={onContinue}>

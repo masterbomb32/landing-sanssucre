@@ -9,6 +9,7 @@ import { ShareButton } from "@/components/share-button";
 import { fetchReceipt } from "@/server/receipt.functions";
 import { getReward } from "@/lib/rewards";
 import { siteCopy } from "@/lib/site-copy";
+import { formatDate } from "@/lib/format-date";
 
 export const Route = createFileRoute("/receipt/$code")({
   loader: async ({ params }) => {
@@ -160,7 +161,7 @@ function ReceiptPage() {
             <div className="mt-5 flex items-center gap-3 rounded-xl border bg-card p-4 text-sm">
               <Calendar className="h-5 w-5 flex-none text-primary" />
               <div>
-                Issued {issued.toLocaleDateString("en-PH", { dateStyle: "long" })}. Show this page
+                Issued {formatDate(issued, "long")} (PHT). Show this page
                 on opening day.
               </div>
             </div>

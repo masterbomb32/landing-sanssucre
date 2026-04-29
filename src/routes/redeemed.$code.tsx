@@ -9,6 +9,7 @@ import { fetchReceipt } from "@/server/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
 import { getReward } from "@/lib/rewards";
 import { useSiteCopy } from "@/hooks/use-site-copy";
+import { formatDateTime } from "@/lib/format-date";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/redeemed/$code")({
