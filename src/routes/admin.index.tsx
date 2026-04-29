@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Download, Check } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
+import { formatDateTime } from "@/lib/format-date";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
@@ -178,7 +179,7 @@ function Dashboard() {
               return (
                 <tr key={r.id} className="border-t">
                   <td className="px-4 py-3 text-muted-foreground">
-                    {new Date(r.created_at).toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}
+                    {formatDateTime(r.created_at, { dateStyle: "medium", timeStyle: "short" })}
                   </td>
                   <td className="px-4 py-3 font-medium">
                     {r.name}

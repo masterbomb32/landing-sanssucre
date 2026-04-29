@@ -9,6 +9,7 @@ import { fetchReceipt } from "@/server/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
 import { getReward } from "@/lib/rewards";
 import { useSiteCopy } from "@/hooks/use-site-copy";
+import { formatDateTime } from "@/lib/format-date";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/redeemed/$code")({
@@ -98,7 +99,7 @@ function RedeemedPage() {
                 <div className="text-4xl" aria-hidden>{reward.emoji}</div>
                 <div className="mt-2 font-display text-xl font-semibold">{reward.title}</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Claimed {redeemedAt.toLocaleString("en-PH", { dateStyle: "long", timeStyle: "short" })}
+                  Claimed {formatDateTime(redeemedAt, { dateStyle: "long", timeStyle: "short" })} (PHT)
                 </p>
               </div>
             )}
