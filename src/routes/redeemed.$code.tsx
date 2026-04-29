@@ -1,15 +1,16 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { Star, Check, MapPin, Sparkles } from "lucide-react";
+import { Star, Check, Instagram, Facebook, Mail, Loader2 } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchReceipt } from "@/server/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
+import { subscribeMailingList } from "@/server/mailing.functions";
 import { getReward } from "@/lib/rewards";
 import { useSiteCopy } from "@/hooks/use-site-copy";
-import { formatDateTime } from "@/lib/format-date";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/redeemed/$code")({
@@ -43,6 +44,14 @@ export const Route = createFileRoute("/redeemed/$code")({
   component: RedeemedPage,
 });
 
+function maskEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!domain) return email;
+  const head = local.slice(0, 1);
+  const tail = local.length > 2 ? local.slice(-1) : "";
+  return `${head}${"*".repeat(Math.max(1, local.length - head.length - tail.length))}${tail}@${domain}`;
+}
+
 function RedeemedPage() {
   const { code } = Route.useParams();
   const { data, hasFeedback } = Route.useLoaderData();
@@ -71,82 +80,181 @@ function RedeemedPage() {
   }
 
   const firstName = data.name.split(" ")[0];
-  const redeemedAt = new Date(data.redeemed_at as string);
+  const hasEmail = !!data.email;
 
   return (
-    <main className="min-h-screen bg-background px-4 py-10 sm:py-16">
-      <div className="mx-auto max-w-xl">
-        <div className="mb-6 text-center">
-          <img src={logo} alt="Sans Sucre" className="mx-auto h-16 w-auto sm:h-20" />
-        </div>
-
-        <div className="overflow-hidden rounded-3xl border-2 border-primary/15 bg-card shadow-xl">
-          <div className="flex items-center justify-center gap-2 bg-emerald-500 px-6 py-3 text-xs font-medium uppercase tracking-[0.25em] text-white">
-            <Check className="h-4 w-4" /> Redeemed
+    <main className="flex min-h-[100dvh] items-center justify-center bg-background px-3 py-3 sm:px-4 sm:py-4">
+      <div className="w-full max-w-md">
+        <div className="overflow-hidden rounded-2xl border-2 border-primary/15 bg-card shadow-xl">
+          <div className="flex items-center justify-center gap-1.5 bg-emerald-500 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.25em] text-white">
+            <Check className="h-3 w-3" /> Redeemed
           </div>
 
-          <div className="px-6 py-8 sm:px-10 sm:py-10 text-center">
-            <p className="font-display text-xs uppercase tracking-[0.3em] text-primary">
-              Thank you, {firstName}
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-bold leading-tight sm:text-4xl">
-              {copy.thankYou.headline}
-            </h1>
-            <p className="mt-2 text-sm text-muted-foreground">{copy.thankYou.sub}</p>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            <div className="text-center">
+              <img src={logo} alt="Sans Sucre" className="mx-auto h-10 w-auto sm:h-12" />
+              <p className="mt-2 font-display text-[10px] uppercase tracking-[0.3em] text-primary">
+                Thank you, {firstName}
+              </p>
+              <h1 className="mt-0.5 font-display text-xl font-bold leading-tight sm:text-2xl">
+                {copy.thankYou.headline}
+              </h1>
+            </div>
 
             {reward && (
-              <div className="mt-7 rounded-2xl bg-secondary/40 p-5">
-                <div className="text-4xl" aria-hidden>{reward.emoji}</div>
-                <div className="mt-2 font-display text-xl font-semibold">{reward.title}</div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Claimed {formatDateTime(redeemedAt, { dateStyle: "long", timeStyle: "short" })} (PHT)
-                </p>
+              <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-secondary/40 px-4 py-2">
+                <span className="text-2xl" aria-hidden>{reward.emoji}</span>
+                <span className="font-display text-sm font-semibold">{reward.title}</span>
               </div>
             )}
 
-            {/* Feedback */}
-            <FeedbackBlock code={code} alreadySubmitted={hasFeedback} copy={copy.thankYou} />
-
-            {/* Future rewards / what's next */}
-            <div className="mt-8 rounded-2xl border border-primary/10 bg-primary/5 p-5 text-left">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <h2 className="font-display text-sm font-semibold uppercase tracking-[0.2em]">
-                  {copy.futureRewards.heading}
-                </h2>
+            <div className="mt-3 text-center">
+              <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+                {copy.social.followPrompt}
+              </p>
+              <div className="mt-1.5 flex items-center justify-center gap-2">
+                <a
+                  href={copy.social.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-secondary/60 text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+                <a
+                  href={copy.social.facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-secondary/60 text-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <ShareButton
+                  variant="outline"
+                  size="icon"
+                  iconOnly
+                  className="h-9 w-9 rounded-full"
+                  text={copy.thankYou.shareText}
+                  url={typeof window !== "undefined" ? window.location.origin + "/" : undefined}
+                />
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">{copy.futureRewards.body}</p>
             </div>
 
-            {/* Location */}
-            <div className="mt-6 flex items-start gap-3 rounded-xl border bg-card p-4 text-left">
-              <MapPin className="mt-0.5 h-5 w-5 flex-none text-primary" />
-              <div className="text-sm">
-                <div className="font-semibold">Sans Sucre</div>
-                <div className="text-muted-foreground">
-                  Inside Metro Supermarket, Alabang Town Center
-                </div>
-              </div>
-            </div>
-
-            {/* Share */}
-            <div className="mt-6">
-              <ShareButton
-                className="w-full"
-                text={copy.thankYou.shareText}
-                url={typeof window !== "undefined" ? window.location.origin + "/" : undefined}
+            <div className="mt-3">
+              <MailingListBlock
+                code={code}
+                hasEmail={hasEmail}
+                existingEmail={data.email ?? undefined}
+                copy={copy.mailingList}
               />
+            </div>
+
+            <div className="mt-3 border-t pt-3">
+              <FeedbackBlock code={code} alreadySubmitted={hasFeedback} copy={copy.thankYou} />
             </div>
           </div>
         </div>
 
-        <div className="mt-6 text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Back to sanssucre.ph
+        <div className="mt-2 text-center">
+          <Link to="/" className="text-[11px] text-muted-foreground hover:text-foreground">
+            ← sanssucre.ph
           </Link>
         </div>
       </div>
     </main>
+  );
+}
+
+function MailingListBlock({
+  code,
+  hasEmail,
+  existingEmail,
+  copy,
+}: {
+  code: string;
+  hasEmail: boolean;
+  existingEmail?: string;
+  copy: {
+    headingNoEmail: string;
+    bodyNoEmail: string;
+    placeholder: string;
+    submit: string;
+    success: string;
+    headingHasEmail: string;
+    bodyHasEmail: string;
+  };
+}) {
+  const [email, setEmail] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  if (hasEmail) {
+    return (
+      <div className="flex items-start gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+        <Mail className="mt-0.5 h-4 w-4 flex-none text-primary" />
+        <div className="text-left text-xs">
+          <div className="font-semibold">{copy.headingHasEmail}</div>
+          <div className="text-muted-foreground">
+            {copy.bodyHasEmail.replace("{email}", maskEmail(existingEmail ?? ""))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (done) {
+    return (
+      <div className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+        <Check className="h-4 w-4" /> {copy.success}
+      </div>
+    );
+  }
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.includes("@")) {
+      toast.error("Please enter a valid email");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await subscribeMailingList({ data: { code, email: email.trim() } });
+      setDone(true);
+      toast.success(copy.success);
+    } catch {
+      toast.error("Could not subscribe. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+      <div className="flex items-start gap-2">
+        <Mail className="mt-0.5 h-4 w-4 flex-none text-primary" />
+        <div className="text-left text-xs">
+          <div className="font-semibold">{copy.headingNoEmail}</div>
+          <div className="text-muted-foreground">{copy.bodyNoEmail}</div>
+        </div>
+      </div>
+      <form onSubmit={submit} className="mt-2 flex gap-1.5">
+        <Input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value.slice(0, 254))}
+          placeholder={copy.placeholder}
+          className="h-8 text-xs"
+          required
+        />
+        <Button type="submit" size="sm" disabled={submitting} className="h-8 px-3 text-xs">
+          {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : copy.submit}
+        </Button>
+      </form>
+    </div>
   );
 }
 
@@ -164,12 +272,12 @@ function FeedbackBlock({
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(alreadySubmitted);
+  const [showComment, setShowComment] = useState(false);
 
   if (done) {
     return (
-      <div className="mt-7 rounded-2xl border bg-secondary/30 p-5 text-center">
-        <Check className="mx-auto h-5 w-5 text-emerald-600" />
-        <p className="mt-1 text-sm font-medium">{copy.feedbackThanks}</p>
+      <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+        <Check className="h-3.5 w-3.5" /> {copy.feedbackThanks}
       </div>
     );
   }
@@ -186,20 +294,19 @@ function FeedbackBlock({
       toast.success(copy.feedbackThanks);
     } catch (e: any) {
       const msg = e?.message || "";
-      if (msg.includes("ALREADY_SUBMITTED")) {
-        setDone(true);
-      } else {
-        toast.error("Could not save feedback. Please try again.");
-      }
+      if (msg.includes("ALREADY_SUBMITTED")) setDone(true);
+      else toast.error("Could not save feedback. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="mt-7 rounded-2xl border bg-card p-5 text-center">
-      <p className="text-sm font-medium">{copy.feedbackPrompt}</p>
-      <div className="mt-3 flex justify-center gap-1.5">
+    <div className="text-center">
+      <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
+        {copy.feedbackPrompt}
+      </p>
+      <div className="mt-1 flex justify-center gap-0.5">
         {[1, 2, 3, 4, 5].map((n) => {
           const active = (hover || rating) >= n;
           return (
@@ -209,11 +316,14 @@ function FeedbackBlock({
               aria-label={`${n} star${n > 1 ? "s" : ""}`}
               onMouseEnter={() => setHover(n)}
               onMouseLeave={() => setHover(0)}
-              onClick={() => setRating(n)}
-              className="p-1"
+              onClick={() => {
+                setRating(n);
+                setShowComment(true);
+              }}
+              className="p-0.5"
             >
               <Star
-                className={`h-7 w-7 transition-colors ${
+                className={`h-6 w-6 transition-colors ${
                   active ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
                 }`}
               />
@@ -221,16 +331,20 @@ function FeedbackBlock({
           );
         })}
       </div>
-      <Textarea
-        value={comment}
-        onChange={(e) => setComment(e.target.value.slice(0, 500))}
-        placeholder={copy.feedbackPlaceholder}
-        rows={2}
-        className="mt-3"
-      />
-      <Button onClick={submit} disabled={submitting || rating < 1} className="mt-3 w-full">
-        {submitting ? "Sending…" : copy.feedbackSubmit}
-      </Button>
+      {showComment && (
+        <div className="mt-2 flex gap-1.5">
+          <Textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value.slice(0, 500))}
+            placeholder={copy.feedbackPlaceholder}
+            rows={1}
+            className="min-h-8 resize-none text-xs"
+          />
+          <Button onClick={submit} disabled={submitting || rating < 1} size="sm" className="h-auto px-3 text-xs">
+            {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : copy.feedbackSubmit}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

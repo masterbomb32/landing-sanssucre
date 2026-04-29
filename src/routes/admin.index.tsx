@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Download, Check, Star, Share2, Eye } from "lucide-react";
+import { Loader2, Search, Download, Check, Star, Share2, Eye, Mail } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
 import { toast } from "sonner";
@@ -44,6 +44,14 @@ interface FeedbackRow {
   created_at: string;
 }
 
+interface MailingSub {
+  id: string;
+  signup_id: string;
+  email: string;
+  source: string;
+  created_at: string;
+}
+
 function Dashboard() {
   const [rows, setRows] = useState<Signup[] | null>(null);
   const [q, setQ] = useState("");
@@ -51,9 +59,10 @@ function Dashboard() {
   const [visits, setVisits] = useState<Visit[]>([]);
   const [shares, setShares] = useState<ShareEvent[]>([]);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
+  const [mailing, setMailing] = useState<MailingSub[]>([]);
 
   const load = async () => {
-    const [signupsRes, visitsRes, sharesRes, feedbackRes] = await Promise.all([
+    const [signupsRes, visitsRes, sharesRes, feedbackRes, mailingRes] = await Promise.all([
       supabase
         .from("signups")
         .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at,created_at")
@@ -74,6 +83,11 @@ function Dashboard() {
         .select("id,signup_id,rating,comment,created_at")
         .order("created_at", { ascending: false })
         .limit(1000),
+      supabase
+        .from("mailing_subscriptions")
+        .select("id,signup_id,email,source,created_at")
+        .order("created_at", { ascending: false })
+        .limit(1000),
     ]);
 
     if (signupsRes.error) {
@@ -85,6 +99,7 @@ function Dashboard() {
     setVisits(visitsRes.data ?? []);
     setShares(sharesRes.data ?? []);
     setFeedback(feedbackRes.data ?? []);
+    setMailing(mailingRes.data ?? []);
   };
 
   useEffect(() => {
@@ -306,6 +321,33 @@ function Dashboard() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Mailing list */}
+      <div className="mt-6 rounded-xl border bg-card p-5">
+        <h2 className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-muted-foreground">
+          <Mail className="h-4 w-4" /> Mailing list
+        </h2>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MiniStat label="Total subscribers" value={mailing.length} />
+          <MiniStat
+            label="From thank-you page"
+            value={mailing.filter((m) => m.source === "thank_you_page").length}
+          />
+          <MiniStat
+            label="With email at signup"
+            value={(rows ?? []).filter((r) => !!r.email).length}
+          />
+          <MiniStat
+            label="Reachable by email"
+            value={
+              new Set([
+                ...((rows ?? []).filter((r) => !!r.email).map((r) => r.id)),
+                ...mailing.map((m) => m.signup_id),
+              ]).size
+            }
+          />
         </div>
       </div>
 

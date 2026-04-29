@@ -31,6 +31,8 @@ interface Props {
   text?: string;
   className?: string;
   variant?: "default" | "outline" | "secondary" | "ghost";
+  size?: "default" | "sm" | "lg" | "icon";
+  iconOnly?: boolean;
 }
 
 export function ShareButton({
@@ -39,6 +41,8 @@ export function ShareButton({
   text = siteCopy.brand.shareText,
   className,
   variant = "outline",
+  size = "default",
+  iconOnly = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -73,8 +77,14 @@ export function ShareButton({
 
   return (
     <>
-      <Button onClick={handleClick} variant={variant} className={className}>
-        <Share2 /> Share
+      <Button
+        onClick={handleClick}
+        variant={variant}
+        size={size}
+        className={className}
+        aria-label={iconOnly ? "Share" : undefined}
+      >
+        <Share2 /> {iconOnly ? null : "Share"}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-md">
