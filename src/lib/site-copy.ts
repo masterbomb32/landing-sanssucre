@@ -61,4 +61,12 @@ export const siteCopy = {
     headingHasEmail: "You're on the list",
     bodyHasEmail: "We'll email future rewards and event invites to {email}.",
   },
+  findMyReward: {
+    linkLabel: "Already signed up? Find my reward →",
+    heading: "Find my reward",
+    body: "Lost your link? Enter the mobile number you signed up with and we'll show your QR code.",
+    submit: "Find my reward",
+    notFound: "We couldn't find a reward for that number. Double-check it, or sign up at the home page.",
+    placeholder: "09171234567",
+  },
 } as const;
