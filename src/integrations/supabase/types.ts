@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          signup_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          signup_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          signup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_signup_id_fkey"
+            columns: ["signup_id"]
+            isOneToOne: true
+            referencedRelation: "signups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_log: {
         Row: {
           channel: string
