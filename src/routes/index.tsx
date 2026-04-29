@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import logo from "@/assets/sanssucre-logo.png";
-import redVelvetWebp from "@/assets/red-velvet.webp";
-import redVelvetPng from "@/assets/red-velvet.png";
+import heroWebp from "@/assets/red-velvet-hero.webp";
+import heroPng from "@/assets/red-velvet-hero.png";
 import { SignupForm } from "@/components/signup-form";
 import { ShareButton } from "@/components/share-button";
 import { useTrackVisit } from "@/hooks/use-track-visit";
@@ -30,60 +30,68 @@ function Index() {
   useTrackVisit("/");
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
-      {/* Header */}
-      <header className="border-b border-border/60 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
+      {/* Cinematic full-bleed hero */}
+      <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[85vh]">
+        {/* Background image */}
+        <picture>
+          <source srcSet={heroWebp} type="image/webp" />
           <img
-            src={logo}
-            alt="Sans Sucre"
-            width={180}
-            height={48}
-            className="h-9 w-auto sm:h-12"
+            src={heroPng}
+            alt="A red velvet muffin with cream cheese on a stone countertop"
+            className="absolute inset-0 -z-20 h-full w-full object-cover object-center md:object-[70%_center]"
             fetchPriority="high"
+            decoding="async"
+            width={1920}
+            height={1080}
           />
+        </picture>
+        {/* Warm legibility overlays */}
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10 bg-gradient-to-b from-background/85 via-background/40 to-background/95 md:bg-gradient-to-r md:from-background/90 md:via-background/55 md:to-transparent"
+        />
+        <div
+          aria-hidden
+          className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-b from-transparent to-background"
+        />
+
+        {/* Top bar with share */}
+        <div className="mx-auto flex max-w-6xl items-center justify-end px-5 pt-5">
           <ShareButton variant="ghost" className="hidden sm:inline-flex" />
         </div>
-      </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-8 px-5 py-10 sm:py-16 md:grid-cols-2 lg:py-24">
-          <div className="order-2 md:order-1">
-            <p className="font-display text-xs uppercase tracking-[0.3em] text-primary sm:text-sm">
+        {/* Content */}
+        <div className="mx-auto flex max-w-6xl flex-col px-5 pb-16 pt-6 sm:pt-10 md:min-h-[75vh] md:justify-center md:pb-24">
+          <div className="max-w-xl">
+            <img
+              src={logo}
+              alt="Sans Sucre"
+              width={240}
+              height={64}
+              className="h-14 w-auto sm:h-20"
+              fetchPriority="high"
+            />
+            <p className="mt-6 font-display text-xs uppercase tracking-[0.35em] text-primary sm:text-sm">
               Grand Opening
             </p>
-            <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] text-foreground sm:text-5xl lg:text-6xl">
+            <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl">
               A sweet welcome,
               <br />
               <span className="text-primary">just for you.</span>
             </h1>
-            <p className="mt-5 max-w-md text-base text-muted-foreground sm:text-lg">
-              Reserve your reward in under a minute. Visit us on opening day and we'll have it
-              waiting.
+            <p className="mt-5 max-w-md text-base text-foreground/80 sm:text-lg">
+              Reserve your reward in under a minute. Visit Sans Sucre on opening day and we'll have
+              something sweet waiting.
             </p>
             <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
               <a
                 href="#claim"
-                className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
               >
                 Claim my reward
               </a>
               <ShareButton />
             </div>
-          </div>
-          <div className="order-1 md:order-2">
-            <picture>
-              <source srcSet={redVelvetWebp} type="image/webp" />
-              <img
-                src={redVelvetPng}
-                alt="Sans Sucre red velvet muffin with cream cheese topping"
-                width={800}
-                height={800}
-                className="mx-auto h-auto w-full max-w-xs drop-shadow-2xl sm:max-w-sm md:max-w-md"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </picture>
           </div>
         </div>
       </section>
