@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { siteCopy } from "@/lib/site-copy";
 
 interface Props {
   url?: string;
@@ -20,8 +21,8 @@ interface Props {
 
 export function ShareButton({
   url,
-  title = "Sans Sucre Opening Day",
-  text = "Join Sans Sucre's opening day and claim a sweet reward!",
+  title = `${siteCopy.brand.name} — ${siteCopy.brand.tagline}`,
+  text = siteCopy.brand.shareText,
   className,
   variant = "outline",
 }: Props) {
