@@ -1,6 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import heroWebp from "@/assets/red-velvet-hero.webp";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -48,6 +49,7 @@ export const Route = createRootRoute({
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "preload", as: "image", href: heroWebp, type: "image/webp" },
       {
         rel: "stylesheet",
         href: appCss,
