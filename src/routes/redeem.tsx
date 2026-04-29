@@ -218,7 +218,7 @@ function RedeemStation() {
           <>
             <Scanner onResult={processCode} paused={!scanning || busy} />
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Point the camera at the customer's QR code or barcode
+              Point the camera at the customer's QR code
             </p>
 
             {/* Manual fallback */}

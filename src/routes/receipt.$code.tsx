@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import Barcode from "react-barcode";
+import { QRCodeSVG } from "qrcode.react";
 import { Check, Calendar, MapPin } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
@@ -111,28 +111,27 @@ function ReceiptPage() {
               </div>
             )}
 
-            {/* Barcode */}
+            {/* QR code */}
             <div className="mt-3 rounded-xl border bg-muted/30 px-3 py-3 text-center">
               <div className="text-[9px] uppercase tracking-[0.25em] text-muted-foreground">
-                Redemption code
+                Scan at the counter
               </div>
               <div className="mt-2 flex justify-center">
-                <div className="w-full rounded bg-white px-2 py-3 sm:px-3">
-                  <Barcode
+                <div className="rounded-lg bg-white p-3 shadow-sm">
+                  <QRCodeSVG
                     value={code}
-                    format="CODE128"
-                    height={92}
-                    width={1.35}
-                    fontSize={11}
-                    margin={18}
-                    displayValue={false}
-                    background="#ffffff"
-                    lineColor="#000000"
+                    size={168}
+                    level="H"
+                    includeMargin={false}
+                    bgColor="#ffffff"
+                    fgColor="#000000"
                   />
                 </div>
               </div>
               <div className="mt-2 font-mono text-sm font-semibold tracking-[0.28em]">{code}</div>
-              <p className="mt-1 text-[10px] text-muted-foreground">Show this at the counter</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                Or read out the code above
+              </p>
             </div>
 
             {/* Info strip */}
