@@ -9,15 +9,16 @@ import atcLogo from "@/assets/atc-logo.png";
 import { SignupForm } from "@/components/signup-form";
 import { ShareButton } from "@/components/share-button";
 import { useTrackVisit } from "@/hooks/use-track-visit";
-import { siteCopy } from "@/lib/site-copy";
+import { siteCopy as defaults } from "@/lib/site-copy";
+import { useSiteCopy } from "@/hooks/use-site-copy";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: siteCopy.meta.title },
-      { name: "description", content: siteCopy.meta.description },
-      { property: "og:title", content: siteCopy.meta.title },
-      { property: "og:description", content: siteCopy.meta.description },
+      { title: defaults.meta.title },
+      { name: "description", content: defaults.meta.description },
+      { property: "og:title", content: defaults.meta.title },
+      { property: "og:description", content: defaults.meta.description },
     ],
   }),
   component: Index,
@@ -25,6 +26,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   useTrackVisit("/");
+  const siteCopy = useSiteCopy();
   const formRef = useRef<HTMLElement | null>(null);
   const [formVisible, setFormVisible] = useState(false);
   useEffect(() => {
