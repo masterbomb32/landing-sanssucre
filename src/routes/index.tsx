@@ -89,27 +89,9 @@ function Index() {
               {siteCopy.hero.sub}
             </p>
 
-            {/* Location chip — Metro × ATC */}
-            <div className="mt-6 inline-flex max-w-full flex-wrap items-center gap-3 rounded-full border border-border/60 bg-background/70 px-4 py-2 backdrop-blur-sm">
-              <img
-                src={metroLogo}
-                alt="Metro Supermarket"
-                className="h-6 w-auto sm:h-7"
-                loading="lazy"
-              />
-              <span className="text-xs text-muted-foreground" aria-hidden>
-                ×
-              </span>
-              <img
-                src={atcLogo}
-                alt="Alabang Town Center"
-                className="h-6 w-auto sm:h-7"
-                loading="lazy"
-              />
-              <span className="text-xs font-medium text-foreground/80 sm:text-sm">
-                {siteCopy.hero.location}
-              </span>
-            </div>
+            <p className="mt-6 text-sm font-medium text-foreground/80">
+              {siteCopy.hero.location}
+            </p>
 
             <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
               <a
