@@ -28,12 +28,20 @@ export const Route = createFileRoute("/receipt/$code")({
         <p className="mt-3 text-sm text-muted-foreground">
           We couldn't find a reward with that code. Please check the link and try again.
         </p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground"
-        >
-          Back to home
-        </Link>
+        <div className="mt-6 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
+          <Link
+            to="/find"
+            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground"
+          >
+            Find my reward by phone number
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-5 text-sm font-medium hover:bg-accent"
+          >
+            Back to home
+          </Link>
+        </div>
       </div>
     </main>
   ),

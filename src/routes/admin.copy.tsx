@@ -38,7 +38,13 @@ const FIELDS: { key: string; label: string; multiline?: boolean; defaultValue: s
   { key: "mailingList.submit", label: "Mailing list — submit button", defaultValue: siteCopy.mailingList.submit },
   { key: "mailingList.headingHasEmail", label: "Mailing list — heading (already on list)", defaultValue: siteCopy.mailingList.headingHasEmail },
   { key: "mailingList.bodyHasEmail", label: "Mailing list — body (already on list, use {email})", multiline: true, defaultValue: siteCopy.mailingList.bodyHasEmail },
+  { key: "findMyReward.linkLabel", label: "Find my reward — link label (homepage)", defaultValue: siteCopy.findMyReward.linkLabel },
+  { key: "findMyReward.heading", label: "Find my reward — page heading", defaultValue: siteCopy.findMyReward.heading },
+  { key: "findMyReward.body", label: "Find my reward — page body", multiline: true, defaultValue: siteCopy.findMyReward.body },
+  { key: "findMyReward.submit", label: "Find my reward — submit button", defaultValue: siteCopy.findMyReward.submit },
+  { key: "findMyReward.notFound", label: "Find my reward — not found message", multiline: true, defaultValue: siteCopy.findMyReward.notFound },
   { key: "staff.redeem_pin", label: "Staff redeem PIN (4–6 digits, default 1234)", defaultValue: "1234" },
+  { key: "staff.redeem_hold_seconds", label: "Staff redeem confirmation hold (seconds, 0 = stay until dismissed)", defaultValue: "8" },
 ];
 
 function CopyEditor() {
