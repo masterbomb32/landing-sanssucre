@@ -10,6 +10,20 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { siteCopy } from "@/lib/site-copy";
+import { logShare } from "@/server/signup.functions";
+import { getVisitorId } from "@/lib/visitor";
+
+type Channel = "native" | "copy" | "whatsapp" | "facebook" | "dialog_open";
+
+function track(channel: Channel) {
+  try {
+    const visitorId = getVisitorId();
+    const path = typeof window !== "undefined" ? window.location.pathname : "/";
+    logShare({ data: { visitorId, channel, path } }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
 
 interface Props {
   url?: string;
@@ -35,11 +49,13 @@ export function ShareButton({
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share({ title, text, url: shareUrl });
+        track("native");
         return;
       } catch {
         /* user cancelled — fall through to dialog */
       }
     }
+    track("dialog_open");
     setOpen(true);
   };
 
@@ -48,6 +64,7 @@ export function ShareButton({
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast.success("Link copied!");
+      track("copy");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Could not copy. Please copy manually.");
@@ -77,6 +94,7 @@ export function ShareButton({
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`${text} ${shareUrl}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => track("whatsapp")}
                 >
                   WhatsApp
                 </a>
@@ -86,6 +104,7 @@ export function ShareButton({
                   href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => track("facebook")}
                 >
                   <Facebook /> Facebook
                 </a>

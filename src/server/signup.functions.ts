@@ -104,3 +104,21 @@ export const logVisit = createServerFn({ method: "POST" })
     if (error) console.error("logVisit error", error);
     return { ok: true };
   });
+
+const ShareSchema = z.object({
+  visitorId: z.string().min(8).max(128),
+  channel: z.enum(["native", "copy", "whatsapp", "facebook", "dialog_open"]),
+  path: z.string().min(1).max(200),
+});
+
+export const logShare = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => ShareSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { error } = await supabaseAdmin.from("share_events").insert({
+      visitor_hash: data.visitorId,
+      channel: data.channel,
+      path: data.path,
+    });
+    if (error) console.error("logShare error", error);
+    return { ok: true };
+  });
