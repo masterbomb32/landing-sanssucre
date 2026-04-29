@@ -324,6 +324,33 @@ function Dashboard() {
         </div>
       </div>
 
+      {/* Mailing list */}
+      <div className="mt-6 rounded-xl border bg-card p-5">
+        <h2 className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-muted-foreground">
+          <Mail className="h-4 w-4" /> Mailing list
+        </h2>
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MiniStat label="Total subscribers" value={mailing.length} />
+          <MiniStat
+            label="From thank-you page"
+            value={mailing.filter((m) => m.source === "thank_you_page").length}
+          />
+          <MiniStat
+            label="With email at signup"
+            value={(rows ?? []).filter((r) => !!r.email).length}
+          />
+          <MiniStat
+            label="Reachable by email"
+            value={
+              new Set([
+                ...((rows ?? []).filter((r) => !!r.email).map((r) => r.id)),
+                ...mailing.map((m) => m.signup_id),
+              ]).size
+            }
+          />
+        </div>
+      </div>
+
       {/* Recent comments */}
       {feedbackStats.recentComments.length > 0 && (
         <div className="mt-6 rounded-xl border bg-card p-5">
