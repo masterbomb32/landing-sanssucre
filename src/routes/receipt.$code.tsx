@@ -1,6 +1,8 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter, redirect } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
+import { useEffect, useState } from "react";
 import { Check, Calendar, MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
 import { fetchReceipt } from "@/server/receipt.functions";
@@ -12,6 +14,10 @@ export const Route = createFileRoute("/receipt/$code")({
   loader: async ({ params }) => {
     const data = await fetchReceipt({ data: { code: params.code } });
     if (!data) throw notFound();
+    // Already redeemed — go straight to thank-you page.
+    if (data.redeemed_at) {
+      throw redirect({ to: "/redeemed/$code", params: { code: params.code } });
+    }
     return data;
   },
   head: () => ({
@@ -51,9 +57,84 @@ export const Route = createFileRoute("/receipt/$code")({
 function ReceiptPage() {
   const { code } = Route.useParams();
   const data = Route.useLoaderData();
+  const router = useRouter();
   const reward = getReward(data.reward_choice);
   const isRedeemed = !!data.redeemed_at;
   const issued = new Date(data.created_at);
+  const [justRedeemed, setJustRedeemed] = useState(false);
+
+  // Live-watch for redemption: realtime + 5s polling fallback. Stops after 30 min.
+  useEffect(() => {
+    if (isRedeemed) return;
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let stopTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const goToThankYou = () => {
+      if (cancelled) return;
+      cancelled = true;
+      setJustRedeemed(true);
+      setTimeout(() => {
+        router.navigate({ to: "/redeemed/$code", params: { code } });
+      }, 900);
+    };
+
+    const checkOnce = async () => {
+      try {
+        const fresh = await fetchReceipt({ data: { code } });
+        if (fresh?.redeemed_at) goToThankYou();
+      } catch {
+        /* swallow — next tick will retry */
+      }
+    };
+
+    // Realtime: any UPDATE on this row triggers a re-check.
+    const channel = supabase
+      .channel(`signup-${data.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "signups",
+          filter: `id=eq.${data.id}`,
+        },
+        () => {
+          checkOnce();
+        },
+      )
+      .subscribe();
+
+    // Polling fallback every 5s.
+    pollTimer = setInterval(checkOnce, 5000);
+
+    // Stop after 30 minutes to save battery.
+    stopTimer = setTimeout(() => {
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = null;
+    }, 30 * 60 * 1000);
+
+    return () => {
+      cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (stopTimer) clearTimeout(stopTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [code, data.id, isRedeemed, router]);
+
+  if (justRedeemed) {
+    return (
+      <main className="flex min-h-[100dvh] items-center justify-center bg-background px-5">
+        <div className="text-center">
+          <div className="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xl">
+            <Check className="h-9 w-9" strokeWidth={3} />
+          </div>
+          <p className="mt-4 font-display text-lg font-semibold">Redeemed!</p>
+          <p className="mt-1 text-sm text-muted-foreground">Loading your thank-you…</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="receipt-shell flex min-h-[100dvh] flex-col bg-background px-3 py-3 sm:px-4 sm:py-5">
@@ -140,6 +221,13 @@ function ReceiptPage() {
               <p className="mt-1 text-[10px] text-muted-foreground">
                 Or read out the code above
               </p>
+            <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              </span>
+              Waiting for staff to scan…
+            </div>
             </div>
 
             {/* Info strip */}

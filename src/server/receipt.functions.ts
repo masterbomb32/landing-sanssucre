@@ -9,7 +9,7 @@ export const fetchReceipt = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: row, error } = await supabaseAdmin
       .from("signups")
-      .select("name, email, reward_choice, redemption_code, redeemed_at, created_at")
+      .select("id, name, email, reward_choice, redemption_code, redeemed_at, created_at")
       .eq("redemption_code", data.code)
       .maybeSingle();
     if (error) throw new Error("Could not load receipt.");

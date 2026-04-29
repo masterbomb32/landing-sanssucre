@@ -1,75 +1,48 @@
-## Three improvements
+## Problem
 
-### 1. Staff redeem confirmation: dismissible + configurable duration
+Right now, when staff scans the QR and marks the reward redeemed, the customer is still looking at their QR page (`/receipt/$code`). Nothing on their phone changes — they'd have to manually refresh to see the small "Leave feedback →" link, then tap it to reach the thank-you page (`/redeemed/$code`) with feedback, share buttons, social links, and the mailing-list block.
 
-**Problem**: The success card auto-clears after 4.5s — too fast. Staff can't pause it, and the duration isn't configurable.
+That's not discoverable. Customers will close the tab thinking they're done.
 
-**Changes:**
-- `src/lib/site-copy.ts` — add `staff.redeemHoldSeconds` (default `8`).
-- `src/routes/admin.copy.tsx` — add a new field "Staff redeem confirmation hold (seconds, 0 = stay until dismissed)" with numeric validation (0–60). Saved into `site_settings` under key `staff.redeem_hold_seconds`.
-- `src/routes/redeem.tsx`:
-  - On mount, also load `staff.redeem_hold_seconds` (alongside the PIN load) and store as a number state.
-  - Replace the hardcoded `setTimeout(..., 4500)` on success with the configured value. If `0`, do **not** auto-clear — staff dismisses manually.
-  - Add a visible **countdown** ("Auto-clears in 6s…") that ticks down, and a prominent **"Done — next customer"** button that's already present (`onContinue`). Also add a **"Pause"** toggle that cancels the timer so staff can hold the screen indefinitely on a busy moment.
-  - The "already redeemed" / "invalid" / "error" states keep their existing short timeouts (those don't need holding).
+## Solution: live "redeemed" detection on the customer's QR page
 
-### 2. Faster QR scanning (barcode-reader feel)
+Make `/receipt/$code` watch for the redemption in real time. The instant staff scans, the customer's phone automatically transitions into the thank-you experience — no refresh, no extra tap.
 
-**Problem**: zxing's `decodeFromVideoElement` decodes frames at a leisurely cadence and waits for full multi-format hint matching, which feels slow vs. a hardware scanner.
+### How it works
 
-**Changes to `src/components/scanner.tsx`:**
-- **QR-only hints** in this redeem flow: drop `CODE_128` from `POSSIBLE_FORMATS` (we're QR-only now). Less work per frame = faster decodes.
-- Switch from `BrowserMultiFormatReader.decodeFromVideoElement` to a **manual `requestAnimationFrame` loop** using `BrowserQRCodeReader` + a single `<canvas>`:
-  - Each frame, draw the center crop of the video into a small canvas (~512×512), then run `decodeFromImageData`. Decoding a smaller, centered region is dramatically faster and matches the "aim at the bracket" UX.
-  - Keep the existing 1.5s same-result debounce.
-- **Lower video resolution** to `1280×720` ideal (down from 1080p). 720p decodes ~2× faster on phones with no real loss for QR.
-- **Request continuous autofocus + torch capability**: after `getUserMedia`, call `track.applyConstraints({ advanced: [{ focusMode: "continuous" }] })` (try/catch — not all devices support it). Add a small **torch toggle button** in the overlay if `track.getCapabilities().torch === true` — huge difference in dim store lighting.
-- **Visual+audio confirmation** stays (`playBeep(true)`), and the bracket overlay flashes green for 250ms on a successful decode for instant feedback.
+1. **Realtime channel** — when the QR page loads and the reward is *not* yet redeemed, subscribe to a Supabase Realtime channel filtered to `signups` UPDATE events for this row's `id`. The moment `redeemed_at` flips from null → timestamp, we navigate the customer to `/redeemed/$code`.
+2. **Polling fallback** — Realtime occasionally drops on flaky in-store WiFi. Add a lightweight 5-second poll using the existing `fetchReceipt` server function as a backup. Stops as soon as redemption is detected (or after 30 minutes idle to save battery).
+3. **Smooth transition** — instead of a hard redirect, briefly show a celebratory "✅ Redeemed! Loading your thank-you…" overlay for ~800ms, then `router.navigate({ to: "/redeemed/$code" })`. Feels intentional, not jarring.
+4. **If the page loads and is already redeemed** — skip the QR view entirely and go straight to `/redeemed/$code`. (Today it shows the QR with a tiny banner; that's the wrong default for someone returning after redemption.)
 
-Net effect: aim → decode in ~100–300ms instead of 1–2s, much closer to a Zebra/Honeywell scanner feel.
+### Required DB change
 
-### 3. Customer "find my QR code" on opening day
+Enable realtime on the `signups` table:
 
-**Problem**: Customers will lose the receipt link/email and need to retrieve their QR on-site.
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.signups;
+ALTER TABLE public.signups REPLICA IDENTITY FULL;
+```
 
-**Approach: phone-number lookup with a one-time SMS-style verification — but kept simple for opening day.** Since we already collected mobile, customers re-enter the same PH mobile to recover their code. Privacy guard: we throttle, don't reveal whether a number exists, and only display the QR after a successful match.
+The existing RLS policy on `signups` (anon SELECT is not allowed — only admins can read) means realtime payloads filtered for anon users won't expose other rows. But for the customer's own QR page we don't actually need the payload contents — we only need the *event* — so we can subscribe and then re-fetch via `fetchReceipt` (which is server-side and bypasses RLS for the specific code lookup) to get the fresh `redeemed_at`.
 
-**Changes:**
+### Files to edit
 
-- **New route `src/routes/find.tsx`** ("Find my reward"):
-  - Single field: PH mobile number, plus a "Find my reward" button.
-  - On submit, calls a new server function `findReceiptByMobile`. On success, redirects to `/receipt/$code` (the existing QR page). On no-match, shows a generic "We couldn't find a reward for that number. Double-check or sign up at the top." (no enumeration leak).
-  - Tasteful copy explaining: "Lost your link? Enter the mobile number you signed up with."
-  - Editable copy keys added to `site-copy.ts` and `admin.copy.tsx` (`findMyReward.heading`, `.body`, `.submit`, `.notFound`).
+- `src/routes/receipt.$code.tsx` — add realtime subscription + 5s polling + auto-redirect on redemption; if loader already returns a redeemed row, redirect immediately.
+- `supabase/migrations/<new>.sql` — enable realtime publication for `signups`.
 
-- **New server function `src/server/receipt.functions.ts` → `findReceiptByMobile`**:
-  - Input: `{ mobile: string }`, normalized via the same `normalizeMobile` used in signup.
-  - Looks up `signups.redemption_code` where `mobile = normalized`. If not found, returns `{ found: false }`. If found, returns `{ found: true, code }`.
-  - **Rate limiting**: simple in-memory or `notification_log`-backed throttle by mobile (max 5 attempts / 10 min) to deter scraping. For opening day a soft in-memory map is sufficient; we'll add a comment noting this.
+### Files NOT changed
 
-- **Surfaced entry points** so customers can find this:
-  - **Receipt page** (`src/routes/receipt.$code.tsx`): no change needed — they already have their link.
-  - **Landing page** (`src/routes/index.tsx`): add a small text link under the hero CTA — "Already signed up? Find my reward →" linking to `/find`.
-  - **Sticky mobile CTA**: leave as-is.
-  - **Footer**: add "Find my reward" link.
-  - **404 / not-found** on `/receipt/$code`: add a "Find my reward by phone number" button.
+- `/redeemed/$code` already has feedback, social links, share, and mailing list — it's the correct destination.
+- Staff redeem flow stays as-is (the existing "Show customer thank-you" button there is now redundant for in-person flow but still useful for edge cases like a customer who closed the tab — leave it).
 
-### Technical summary
+### UX detail
 
-Files created:
-- `src/routes/find.tsx`
+A small "Waiting for staff to scan…" pulse indicator under the QR code makes it clear the page is live. When detected, the indicator becomes a green check with "Redeemed! Taking you to your thank-you page…" for ~800ms before navigation.
 
-Files edited:
-- `src/lib/site-copy.ts` — add `staff.redeemHoldSeconds`, `findMyReward.*`.
-- `src/routes/admin.copy.tsx` — add hold-seconds field + find-my-reward copy fields.
-- `src/routes/redeem.tsx` — load hold setting, configurable timer + countdown + pause.
-- `src/components/scanner.tsx` — manual rAF decode loop, 720p, torch + autofocus, optional QR-only mode prop.
-- `src/server/receipt.functions.ts` — add `findReceiptByMobile` server function with throttling.
-- `src/routes/index.tsx` — add "Find my reward" link in hero + footer.
-- `src/routes/receipt.$code.tsx` — add link in `notFoundComponent`.
+### Edge cases handled
 
-No database migrations required — uses existing `signups.mobile` and `site_settings`.
-
-### Open question
-
-For the customer lookup, do you want an extra verification step (send a 6-digit code via SMS to the matched mobile) before showing the QR, or is a direct mobile-match lookup acceptable for opening day? Direct match is faster and free; SMS verification is more secure but requires wiring up an SMS provider. I'd recommend **direct match + throttling** for opening day given the short event window and low value of the rewards — happy to switch to OTP if you prefer.
+- Customer reloads after redemption → loader sees `redeemed_at`, redirects immediately to `/redeemed/$code`.
+- Realtime fails to connect → 5s polling still catches it within ~5s.
+- Customer leaves tab open for hours → polling stops after 30 min to spare battery; reload re-arms it.
+- Network blip during redemption → next poll catches it.
