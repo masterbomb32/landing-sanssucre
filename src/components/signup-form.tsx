@@ -143,9 +143,17 @@ export function SignupForm() {
                   className="grid gap-3 sm:grid-cols-3"
                 >
                   {REWARDS.map((r) => (
-                    <label
+                    <div
                       key={r.id}
-                      htmlFor={`reward-${r.id}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => field.onChange(r.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          field.onChange(r.id);
+                        }
+                      }}
                       className={`group flex cursor-pointer flex-col rounded-lg border bg-card p-4 transition-colors hover:border-primary ${
                         field.value === r.id
                           ? "border-primary ring-2 ring-primary/30"
@@ -156,11 +164,15 @@ export function SignupForm() {
                         <div className="text-3xl" aria-hidden>
                           {r.emoji}
                         </div>
-                        <RadioGroupItem id={`reward-${r.id}`} value={r.id} />
+                        <RadioGroupItem
+                          id={`reward-${r.id}`}
+                          value={r.id}
+                          onClick={(e) => e.stopPropagation()}
+                        />
                       </div>
                       <div className="mt-3 font-display text-lg font-semibold">{r.title}</div>
                       <div className="mt-1 text-xs text-muted-foreground">{r.description}</div>
-                    </label>
+                    </div>
                   ))}
                 </RadioGroup>
               </FormControl>
