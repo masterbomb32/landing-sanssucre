@@ -5,9 +5,10 @@ import { Scanner, playBeep } from "@/components/scanner";
 import { PinPad } from "@/components/pin-pad";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, AlertTriangle, X, Lock, Loader2 } from "lucide-react";
+import { Check, AlertTriangle, X, Lock, Loader2, Undo2, FlaskConical } from "lucide-react";
 import { getReward } from "@/lib/rewards";
 import { formatDateTime, manilaStartOfTodayISO } from "@/lib/format-date";
+import { toast } from "sonner";
 import logo from "@/assets/sanssucre-logo.png";
 
 export const Route = createFileRoute("/redeem")({
@@ -23,11 +24,15 @@ export const Route = createFileRoute("/redeem")({
 const SESSION_KEY = "sanssucre_redeem_unlocked";
 const PIN_SETTING_KEY = "staff.redeem_pin";
 const HOLD_SETTING_KEY = "staff.redeem_hold_seconds";
+const TEST_MODE_KEY = "staff.test_mode"; // values: "off" | "fake" | "prefix"
+const UNDO_WINDOW_SECONDS = 30;
 const DEFAULT_PIN = "1234";
 const DEFAULT_HOLD_SECONDS = 8;
 
+type TestMode = "off" | "fake" | "prefix";
+
 type Result =
-  | { kind: "success"; name: string; reward: string; rewardEmoji: string; code: string; createdAt: string }
+  | { kind: "success"; name: string; reward: string; rewardEmoji: string; code: string; createdAt: string; isTest?: boolean }
   | { kind: "already"; redeemedAt: string; code: string }
   | { kind: "invalid"; code: string }
   | { kind: "error"; message: string };
@@ -37,6 +42,7 @@ function RedeemStation() {
   const [loadingPin, setLoadingPin] = useState(true);
   const [pin, setPin] = useState(DEFAULT_PIN);
   const [holdSeconds, setHoldSeconds] = useState<number>(DEFAULT_HOLD_SECONDS);
+  const [testMode, setTestMode] = useState<TestMode>("off");
   const [scanning, setScanning] = useState(true);
   const [busy, setBusy] = useState(false);
   const [manualCode, setManualCode] = useState("");
@@ -44,6 +50,8 @@ function RedeemStation() {
   const [todayCount, setTodayCount] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
+  const [undoSecondsLeft, setUndoSecondsLeft] = useState<number | null>(null);
+  const [undoing, setUndoing] = useState(false);
 
   // Load PIN from settings + check session
   useEffect(() => {
@@ -54,7 +62,7 @@ function RedeemStation() {
       const { data } = await supabase
         .from("site_settings")
         .select("key,value")
-        .in("key", [PIN_SETTING_KEY, HOLD_SETTING_KEY]);
+        .in("key", [PIN_SETTING_KEY, HOLD_SETTING_KEY, TEST_MODE_KEY]);
       for (const row of data ?? []) {
         const v = typeof row.value === "string"
           ? row.value
@@ -65,6 +73,9 @@ function RedeemStation() {
         if (row.key === HOLD_SETTING_KEY && typeof v === "string") {
           const n = parseInt(v, 10);
           if (!Number.isNaN(n) && n >= 0 && n <= 120) setHoldSeconds(n);
+        }
+        if (row.key === TEST_MODE_KEY && typeof v === "string") {
+          if (v === "fake" || v === "prefix" || v === "off") setTestMode(v);
         }
       }
       setLoadingPin(false);
@@ -83,6 +94,22 @@ function RedeemStation() {
   useEffect(() => {
     if (unlocked) loadCount();
   }, [unlocked, loadCount]);
+
+  const writeAudit = useCallback(
+    async (code: string, action: "redeem" | "unredeem" | "test_redeem", note?: string) => {
+      try {
+        await supabase.from("redemption_audit").insert({
+          code,
+          action,
+          station: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 64) : null,
+          note: note ?? null,
+        });
+      } catch {
+        /* non-blocking */
+      }
+    },
+    [],
+  );
 
   const processCode = useCallback(
     async (rawCode: string) => {
@@ -103,6 +130,31 @@ function RedeemStation() {
         }, 2000);
         return;
       }
+
+      // TEST MODE — "fake": never touch DB, fabricate a successful scan
+      if (testMode === "fake") {
+        const reward = getReward("croissant") ?? { title: "Test Treat", emoji: "🧪", description: "" };
+        playBeep(true);
+        setScanning(false);
+        setResult({
+          kind: "success",
+          name: "Test Customer",
+          reward: reward.title,
+          rewardEmoji: reward.emoji,
+          code,
+          createdAt: new Date().toISOString(),
+          isTest: true,
+        });
+        setManualCode("");
+        setPaused(false);
+        setCountdown(holdSeconds > 0 ? holdSeconds : null);
+        setUndoSecondsLeft(null);
+        return;
+      }
+
+      // TEST MODE — "prefix": only act on codes starting with TEST; real DB write but tagged in audit
+      const isPrefixTest = testMode === "prefix" && code.startsWith("TEST");
+
       setBusy(true);
       setScanning(false);
       const { data, error } = await supabase.rpc("redeem_signup", { p_code: code });
@@ -150,14 +202,18 @@ function RedeemStation() {
         rewardEmoji: reward?.emoji ?? "🎁",
         code,
         createdAt: row?.created_at ?? "",
+        isTest: isPrefixTest,
       });
+      writeAudit(code, isPrefixTest ? "test_redeem" : "redeem");
       loadCount();
       setManualCode("");
       // Initialize countdown — handled by effect below. 0 = no auto-clear.
       setPaused(false);
       setCountdown(holdSeconds > 0 ? holdSeconds : null);
+      // Arm the undo window
+      setUndoSecondsLeft(UNDO_WINDOW_SECONDS);
     },
-    [busy, loadCount, holdSeconds],
+    [busy, loadCount, holdSeconds, testMode, writeAudit],
   );
 
   // Countdown ticker for the success card
@@ -173,11 +229,62 @@ function RedeemStation() {
     return () => clearTimeout(t);
   }, [countdown, paused]);
 
+  // Undo window ticker — independent of the auto-dismiss countdown so pause doesn't extend undo time
+  useEffect(() => {
+    if (undoSecondsLeft === null) return;
+    if (undoSecondsLeft <= 0) {
+      setUndoSecondsLeft(null);
+      return;
+    }
+    const t = setTimeout(() => setUndoSecondsLeft((s) => (s === null ? null : s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [undoSecondsLeft]);
+
+  const undoLast = useCallback(async () => {
+    if (!result || result.kind !== "success" || undoing) return;
+    const code = result.code;
+    // Fake-mode "redemption" has no DB row to revert
+    if (result.isTest && testMode === "fake") {
+      toast.success("Test reverted.");
+      setResult(null);
+      setScanning(true);
+      setCountdown(null);
+      setUndoSecondsLeft(null);
+      return;
+    }
+    setUndoing(true);
+    const { error } = await supabase.rpc("unredeem_signup", {
+      p_code: code,
+      p_window_seconds: UNDO_WINDOW_SECONDS,
+    });
+    setUndoing(false);
+    if (error) {
+      const blob = `${error.message ?? ""}`;
+      if (blob.includes("WINDOW_EXPIRED")) {
+        toast.error("Undo window has passed. Ask the customer to re-scan or contact admin.");
+      } else if (blob.includes("NOT_REDEEMED")) {
+        toast.message("Already reverted.");
+      } else {
+        toast.error("Could not undo. Try again.");
+      }
+      return;
+    }
+    playBeep(false);
+    writeAudit(code, "unredeem");
+    toast.success("Redemption reverted.");
+    loadCount();
+    setResult(null);
+    setScanning(true);
+    setCountdown(null);
+    setUndoSecondsLeft(null);
+  }, [result, undoing, testMode, loadCount, writeAudit]);
+
   const reset = () => {
     setResult(null);
     setScanning(true);
     setCountdown(null);
     setPaused(false);
+    setUndoSecondsLeft(null);
   };
 
   const lock = () => {
@@ -215,6 +322,14 @@ function RedeemStation() {
 
   return (
     <main className="min-h-screen bg-background">
+      {testMode !== "off" && (
+        <div className="flex items-center justify-center gap-2 bg-amber-400 px-4 py-1.5 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-950">
+          <FlaskConical className="h-3.5 w-3.5" />
+          {testMode === "fake"
+            ? "Test mode — no real redemptions"
+            : "Test mode — only codes starting with TEST will redeem"}
+        </div>
+      )}
       {/* Header */}
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
@@ -280,6 +395,9 @@ function RedeemStation() {
             countdown={countdown}
             paused={paused}
             onTogglePause={() => setPaused((p) => !p)}
+            undoSecondsLeft={undoSecondsLeft}
+            onUndo={undoLast}
+            undoing={undoing}
           />
         )}
       </div>
@@ -293,12 +411,18 @@ function ResultCard({
   countdown,
   paused,
   onTogglePause,
+  undoSecondsLeft,
+  onUndo,
+  undoing,
 }: {
   result: Result;
   onContinue: () => void;
   countdown?: number | null;
   paused?: boolean;
   onTogglePause?: () => void;
+  undoSecondsLeft?: number | null;
+  onUndo?: () => void;
+  undoing?: boolean;
 }) {
   if (result.kind === "success") {
     return (
@@ -307,7 +431,7 @@ function ResultCard({
           <Check className="h-9 w-9" strokeWidth={3} />
         </div>
         <p className="mt-3 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700 dark:text-emerald-400">
-          Redeemed
+          {result.isTest ? "Redeemed (TEST)" : "Redeemed"}
         </p>
         <h2 className="mt-1 font-display text-2xl font-bold">Hand over:</h2>
         <div className="mt-4 inline-flex items-center gap-3 rounded-2xl bg-white px-5 py-3 shadow-sm dark:bg-background">
@@ -322,6 +446,22 @@ function ResultCard({
           <Button onClick={onContinue} size="lg" className="font-semibold">
             Done — next customer
           </Button>
+          {undoSecondsLeft !== null && undoSecondsLeft !== undefined && undoSecondsLeft > 0 && onUndo && (
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={onUndo}
+              disabled={undoing}
+              className="border-amber-500/50 text-amber-700 hover:bg-amber-50 dark:text-amber-400"
+            >
+              {undoing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Undo2 className="h-4 w-4" />
+              )}
+              Undo ({undoSecondsLeft}s)
+            </Button>
+          )}
           <Button asChild variant="outline">
             <Link to="/redeemed/$code" params={{ code: result.code }} target="_blank">
               Show customer thank-you
