@@ -18,7 +18,6 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RedeemedCodeRouteImport } from './routes/redeemed.$code'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
-import { Route as RedeemedRouteImport } from './routes/redeemed.'
 
 const RedeemRoute = RedeemRouteImport.update({
   id: '/redeem',
@@ -65,11 +64,6 @@ const AdminCopyRoute = AdminCopyRouteImport.update({
   path: '/copy',
   getParentRoute: () => AdminRoute,
 } as any)
-const RedeemedRoute = RedeemedRouteImport.update({
-  id: '/redeemed/',
-  path: '/redeemed/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,7 +71,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
-  '/redeemed/': typeof RedeemedRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -88,7 +81,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
-  '/redeemed': typeof RedeemedRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -101,7 +93,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
-  '/redeemed/': typeof RedeemedRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -115,7 +106,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/redeem'
-    | '/redeemed/'
     | '/admin/copy'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -126,7 +116,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/redeem'
-    | '/redeemed'
     | '/admin/copy'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -138,7 +127,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/privacy'
     | '/redeem'
-    | '/redeemed/'
     | '/admin/copy'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -151,7 +139,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
   RedeemRoute: typeof RedeemRoute
-  RedeemedRoute: typeof RedeemedRoute
   ReceiptCodeRoute: typeof ReceiptCodeRoute
   RedeemedCodeRoute: typeof RedeemedCodeRoute
 }
@@ -221,13 +208,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCopyRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/redeemed/': {
-      id: '/redeemed/'
-      path: '/redeemed'
-      fullPath: '/redeemed/'
-      preLoaderRoute: typeof RedeemedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -249,7 +229,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
   RedeemRoute: RedeemRoute,
-  RedeemedRoute: RedeemedRoute,
   ReceiptCodeRoute: ReceiptCodeRoute,
   RedeemedCodeRoute: RedeemedCodeRoute,
 }
