@@ -30,6 +30,14 @@ const FIELDS: { key: string; label: string; multiline?: boolean; defaultValue: s
   { key: "futureRewards.body", label: "Thank-you page: 'What's next' body", multiline: true, defaultValue: siteCopy.futureRewards.body },
   { key: "thankYou.headline", label: "Thank-you page headline", defaultValue: siteCopy.thankYou.headline },
   { key: "thankYou.sub", label: "Thank-you page subhead", defaultValue: siteCopy.thankYou.sub },
+  { key: "social.instagramUrl", label: "Instagram URL", defaultValue: siteCopy.social.instagramUrl },
+  { key: "social.facebookUrl", label: "Facebook URL", defaultValue: siteCopy.social.facebookUrl },
+  { key: "social.followPrompt", label: "Social follow prompt", defaultValue: siteCopy.social.followPrompt },
+  { key: "mailingList.headingNoEmail", label: "Mailing list — heading (no email)", defaultValue: siteCopy.mailingList.headingNoEmail },
+  { key: "mailingList.bodyNoEmail", label: "Mailing list — body (no email)", multiline: true, defaultValue: siteCopy.mailingList.bodyNoEmail },
+  { key: "mailingList.submit", label: "Mailing list — submit button", defaultValue: siteCopy.mailingList.submit },
+  { key: "mailingList.headingHasEmail", label: "Mailing list — heading (already on list)", defaultValue: siteCopy.mailingList.headingHasEmail },
+  { key: "mailingList.bodyHasEmail", label: "Mailing list — body (already on list, use {email})", multiline: true, defaultValue: siteCopy.mailingList.bodyHasEmail },
   { key: "staff.redeem_pin", label: "Staff redeem PIN (4–6 digits, default 1234)", defaultValue: "1234" },
 ];
 
