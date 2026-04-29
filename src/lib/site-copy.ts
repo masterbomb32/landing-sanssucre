@@ -47,4 +47,18 @@ export const siteCopy = {
     heading: "What's next at Sans Sucre",
     body: "We'll be posting weekly specials and members-only previews. Watch this space — and your inbox.",
   },
+  social: {
+    instagramUrl: "https://instagram.com/sanssucre.ph",
+    facebookUrl: "https://facebook.com/sanssucre.ph",
+    followPrompt: "Follow us for sweet updates",
+  },
+  mailingList: {
+    headingNoEmail: "Get future rewards & event invites",
+    bodyNoEmail: "Join our mailing list — be first to know about new treats and members-only events.",
+    placeholder: "you@example.com",
+    submit: "Count me in",
+    success: "You're on the list!",
+    headingHasEmail: "You're on the list",
+    bodyHasEmail: "We'll email future rewards and event invites to {email}.",
+  },
 } as const;
