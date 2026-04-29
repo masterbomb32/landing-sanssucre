@@ -45,7 +45,7 @@ function Index() {
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Cinematic full-bleed hero */}
-      <section className="relative isolate min-h-[70vh] overflow-hidden md:min-h-[85vh]">
+      <section className="relative isolate min-h-[78vh] overflow-hidden md:min-h-[85vh]">
         <picture>
           <source srcSet={heroWebp} type="image/webp" />
           <img
@@ -71,29 +71,29 @@ function Index() {
           <ShareButton variant="ghost" className="hidden sm:inline-flex" />
         </div>
 
-        <div className="mx-auto flex max-w-6xl flex-col px-5 pb-16 pt-6 sm:pt-10 md:min-h-[75vh] md:justify-center md:pb-24">
+        <div className="mx-auto flex max-w-6xl flex-col px-6 pb-20 pt-10 sm:px-5 sm:pt-14 md:min-h-[75vh] md:justify-center md:pb-24">
           <div className="max-w-xl">
             <img
               src={logo}
               alt="Sans Sucre"
-              width={240}
-              height={64}
-              className="h-14 w-auto sm:h-20"
+              width={360}
+              height={96}
+              className="h-20 w-auto drop-shadow-md sm:h-28 lg:h-32"
               fetchPriority="high"
             />
-            <p className="mt-6 font-display text-xs uppercase tracking-[0.35em] text-primary sm:text-sm">
+            <p className="mt-8 font-display text-xs uppercase sm:mt-10 sm:text-sm tracking-[0.35em] text-primary sm:text-sm">
               Grand Opening
             </p>
-            <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl">
               A sweet welcome,
               <br />
               <span className="text-primary">just for you.</span>
             </h1>
-            <p className="mt-5 max-w-md text-base text-foreground/80 sm:text-lg">
+            <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/80 sm:text-lg">
               Reserve your reward in under a minute. Visit Sans Sucre on opening day and we'll have
               something sweet waiting.
             </p>
-            <div className="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
               <a
                 href="#claim"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
