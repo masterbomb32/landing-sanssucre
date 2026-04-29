@@ -99,14 +99,16 @@ function RedeemStation() {
       const { data, error } = await supabase.rpc("redeem_signup", { p_code: code });
       setBusy(false);
       if (error) {
-        const msg = error.message || "";
-        if (msg.includes("ALREADY_REDEEMED")) {
-          const at = msg.split("ALREADY_REDEEMED:")[1] ?? "";
+        // PostgREST can put the RAISE EXCEPTION text in message, details, or hint.
+        const errAny = error as { message?: string; details?: string; hint?: string; code?: string };
+        const blob = `${errAny.message ?? ""} ${errAny.details ?? ""} ${errAny.hint ?? ""}`;
+        if (blob.includes("ALREADY_REDEEMED")) {
+          const at = blob.split("ALREADY_REDEEMED:")[1]?.trim().split(/\s/)[0] ?? "";
           playBeep(false);
           setResult({ kind: "already", redeemedAt: at, code });
           return;
         }
-        if (msg.includes("INVALID_CODE")) {
+        if (blob.includes("INVALID_CODE")) {
           playBeep(false);
           setResult({ kind: "invalid", code });
           setTimeout(() => {
@@ -115,8 +117,18 @@ function RedeemStation() {
           }, 2000);
           return;
         }
+        // Transient backend hiccup (schema cache / connection). Auto-rearm so staff can retry.
+        if (errAny.code === "PGRST002" || errAny.code === "PGRST001" || /schema cache|no connection/i.test(blob)) {
+          playBeep(false);
+          setResult({ kind: "error", message: "Backend is warming up. Please try again in a few seconds." });
+          setTimeout(() => {
+            setResult(null);
+            setScanning(true);
+          }, 3000);
+          return;
+        }
         playBeep(false);
-        setResult({ kind: "error", message: msg });
+        setResult({ kind: "error", message: errAny.message || "Could not redeem. Try again." });
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
