@@ -72,9 +72,9 @@ function Index() {
             <img
               src={logo}
               alt="Sans Sucre"
-              width={360}
-              height={96}
-              className="h-20 w-auto drop-shadow-md sm:h-28 lg:h-32"
+              width={480}
+              height={128}
+              className="h-28 w-auto drop-shadow-md sm:h-40 lg:h-48"
               fetchPriority="high"
             />
             <p className="mt-8 font-display text-xs uppercase sm:mt-10 sm:text-sm tracking-[0.35em] text-primary sm:text-sm">
