@@ -111,6 +111,30 @@ export type Database = {
         }
         Relationships: []
       }
+      share_events: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          path: string
+          visitor_hash: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          path: string
+          visitor_hash: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          path?: string
+          visitor_hash?: string
+        }
+        Relationships: []
+      }
       signups: {
         Row: {
           created_at: string
