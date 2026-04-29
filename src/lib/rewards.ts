@@ -5,24 +5,24 @@ export interface Reward {
   emoji: string;
 }
 
-// Placeholder rewards — easy to edit later.
+// Opening-day reward menu.
 export const REWARDS: Reward[] = [
   {
     id: "reward-1",
-    title: "Reward 1",
-    description: "A delightful welcome treat (placeholder — edit in src/lib/rewards.ts).",
-    emoji: "🍰",
+    title: "Signature Cupcake",
+    description: "Choose any classic cupcake from our opening collection.",
+    emoji: "🧁",
   },
   {
     id: "reward-2",
-    title: "Reward 2",
-    description: "Another sweet surprise (placeholder — edit in src/lib/rewards.ts).",
-    emoji: "🥐",
+    title: "Mini Macaron Box",
+    description: "A trio of hand-piped French macarons to take home.",
+    emoji: "🍬",
   },
   {
     id: "reward-3",
-    title: "Reward 3",
-    description: "A signature handcrafted gift (placeholder — edit in src/lib/rewards.ts).",
+    title: "Petit Chocolate",
+    description: "A small handcrafted chocolate bonbon, made in-house.",
     emoji: "🍫",
   },
 ];
