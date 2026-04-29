@@ -59,6 +59,21 @@ function ReceiptPage() {
           <img src={logo} alt="Sans Sucre" className="mx-auto h-16 w-auto sm:h-20" />
         </div>
 
+        {isRedeemed && (
+          <div className="mb-4 rounded-2xl border border-emerald-500/40 bg-emerald-50 p-4 text-center text-sm dark:bg-emerald-950/20">
+            <p className="font-semibold text-emerald-700 dark:text-emerald-400">
+              You've already claimed this treat — enjoy! 🎉
+            </p>
+            <Link
+              to="/redeemed/$code"
+              params={{ code }}
+              className="mt-2 inline-block text-xs underline underline-offset-2"
+            >
+              View thank-you page & leave feedback →
+            </Link>
+          </div>
+        )}
+
         {/* Card */}
         <div className="overflow-hidden rounded-3xl border-2 border-primary/15 bg-card shadow-xl">
           {/* Status banner */}

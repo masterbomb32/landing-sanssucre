@@ -26,6 +26,11 @@ const FIELDS: { key: string; label: string; multiline?: boolean; defaultValue: s
   { key: "form.submit", label: "Form submit button", defaultValue: siteCopy.form.submit },
   { key: "footer.location", label: "Footer location", multiline: true, defaultValue: siteCopy.footer.location },
   { key: "brand.shareText", label: "Share text (used when sharing)", multiline: true, defaultValue: siteCopy.brand.shareText },
+  { key: "futureRewards.heading", label: "Thank-you page: 'What's next' heading", defaultValue: siteCopy.futureRewards.heading },
+  { key: "futureRewards.body", label: "Thank-you page: 'What's next' body", multiline: true, defaultValue: siteCopy.futureRewards.body },
+  { key: "thankYou.headline", label: "Thank-you page headline", defaultValue: siteCopy.thankYou.headline },
+  { key: "thankYou.sub", label: "Thank-you page subhead", defaultValue: siteCopy.thankYou.sub },
+  { key: "staff.redeem_pin", label: "Staff redeem PIN (4–6 digits, default 1234)", defaultValue: "1234" },
 ];
 
 function CopyEditor() {
