@@ -22,7 +22,9 @@ export const Route = createFileRoute("/redeem")({
 
 const SESSION_KEY = "sanssucre_redeem_unlocked";
 const PIN_SETTING_KEY = "staff.redeem_pin";
+const HOLD_SETTING_KEY = "staff.redeem_hold_seconds";
 const DEFAULT_PIN = "1234";
+const DEFAULT_HOLD_SECONDS = 8;
 
 type Result =
   | { kind: "success"; name: string; reward: string; rewardEmoji: string; code: string; createdAt: string }
@@ -34,11 +36,14 @@ function RedeemStation() {
   const [unlocked, setUnlocked] = useState(false);
   const [loadingPin, setLoadingPin] = useState(true);
   const [pin, setPin] = useState(DEFAULT_PIN);
+  const [holdSeconds, setHoldSeconds] = useState<number>(DEFAULT_HOLD_SECONDS);
   const [scanning, setScanning] = useState(true);
   const [busy, setBusy] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [todayCount, setTodayCount] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [paused, setPaused] = useState(false);
 
   // Load PIN from settings + check session
   useEffect(() => {
@@ -48,14 +53,19 @@ function RedeemStation() {
     (async () => {
       const { data } = await supabase
         .from("site_settings")
-        .select("value")
-        .eq("key", PIN_SETTING_KEY)
-        .maybeSingle();
-      if (data?.value) {
-        const v = typeof data.value === "string"
-          ? data.value
-          : (data.value as { v?: string }).v;
-        if (typeof v === "string" && /^\d{4,6}$/.test(v)) setPin(v);
+        .select("key,value")
+        .in("key", [PIN_SETTING_KEY, HOLD_SETTING_KEY]);
+      for (const row of data ?? []) {
+        const v = typeof row.value === "string"
+          ? row.value
+          : (row.value as { v?: string })?.v;
+        if (row.key === PIN_SETTING_KEY && typeof v === "string" && /^\d{4,6}$/.test(v)) {
+          setPin(v);
+        }
+        if (row.key === HOLD_SETTING_KEY && typeof v === "string") {
+          const n = parseInt(v, 10);
+          if (!Number.isNaN(n) && n >= 0 && n <= 120) setHoldSeconds(n);
+        }
       }
       setLoadingPin(false);
     })();
@@ -143,18 +153,31 @@ function RedeemStation() {
       });
       loadCount();
       setManualCode("");
-      // Auto-rearm after success
-      setTimeout(() => {
-        setResult(null);
-        setScanning(true);
-      }, 4500);
+      // Initialize countdown — handled by effect below. 0 = no auto-clear.
+      setPaused(false);
+      setCountdown(holdSeconds > 0 ? holdSeconds : null);
     },
-    [busy, loadCount],
+    [busy, loadCount, holdSeconds],
   );
+
+  // Countdown ticker for the success card
+  useEffect(() => {
+    if (countdown === null || paused) return;
+    if (countdown <= 0) {
+      setResult(null);
+      setScanning(true);
+      setCountdown(null);
+      return;
+    }
+    const t = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [countdown, paused]);
 
   const reset = () => {
     setResult(null);
     setScanning(true);
+    setCountdown(null);
+    setPaused(false);
   };
 
   const lock = () => {
@@ -251,14 +274,32 @@ function RedeemStation() {
         )}
 
         {result && (
-          <ResultCard result={result} onContinue={reset} />
+          <ResultCard
+            result={result}
+            onContinue={reset}
+            countdown={countdown}
+            paused={paused}
+            onTogglePause={() => setPaused((p) => !p)}
+          />
         )}
       </div>
     </main>
   );
 }
 
-function ResultCard({ result, onContinue }: { result: Result; onContinue: () => void }) {
+function ResultCard({
+  result,
+  onContinue,
+  countdown,
+  paused,
+  onTogglePause,
+}: {
+  result: Result;
+  onContinue: () => void;
+  countdown?: number | null;
+  paused?: boolean;
+  onTogglePause?: () => void;
+}) {
   if (result.kind === "success") {
     return (
       <div className="rounded-3xl border-4 border-emerald-500/70 bg-emerald-50 p-6 text-center shadow-xl dark:bg-emerald-950/20">
@@ -278,16 +319,34 @@ function ResultCard({ result, onContinue }: { result: Result; onContinue: () => 
         </p>
         <p className="mt-1 font-mono text-xs text-muted-foreground">{result.code}</p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Button asChild variant="default">
+          <Button onClick={onContinue} size="lg" className="font-semibold">
+            Done — next customer
+          </Button>
+          <Button asChild variant="outline">
             <Link to="/redeemed/$code" params={{ code: result.code }} target="_blank">
               Show customer thank-you
             </Link>
           </Button>
-          <Button variant="outline" onClick={onContinue}>
-            Next customer
-          </Button>
         </div>
-        <p className="mt-3 text-[11px] text-muted-foreground">Auto-clears in a few seconds…</p>
+        <div className="mt-3 flex items-center justify-center gap-3 text-[11px] text-muted-foreground">
+          {countdown === null || countdown === undefined ? (
+            <span>Stays on screen until dismissed</span>
+          ) : paused ? (
+            <>
+              <span>Paused</span>
+              <button type="button" onClick={onTogglePause} className="underline underline-offset-2 hover:text-foreground">
+                Resume
+              </button>
+            </>
+          ) : (
+            <>
+              <span>Auto-clears in {countdown}s</span>
+              <button type="button" onClick={onTogglePause} className="underline underline-offset-2 hover:text-foreground">
+                Pause
+              </button>
+            </>
+          )}
+        </div>
       </div>
     );
   }
