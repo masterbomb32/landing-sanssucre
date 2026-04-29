@@ -135,6 +135,36 @@ export type Database = {
         }
         Relationships: []
       }
+      redemption_audit: {
+        Row: {
+          action: string
+          code: string
+          created_at: string
+          id: string
+          note: string | null
+          signup_id: string | null
+          station: string | null
+        }
+        Insert: {
+          action: string
+          code: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          signup_id?: string | null
+          station?: string | null
+        }
+        Update: {
+          action?: string
+          code?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          signup_id?: string | null
+          station?: string | null
+        }
+        Relationships: []
+      }
       share_events: {
         Row: {
           channel: string
@@ -261,6 +291,14 @@ export type Database = {
           redeemed_at: string
           redemption_code: string
           reward_choice: string
+        }[]
+      }
+      unredeem_signup: {
+        Args: { p_code: string; p_window_seconds?: number }
+        Returns: {
+          id: string
+          redeemed_at: string
+          redemption_code: string
         }[]
       }
     }
