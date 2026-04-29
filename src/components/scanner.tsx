@@ -23,6 +23,7 @@ export function Scanner({ onResult, paused }: Props) {
   const lastResultRef = useRef<{ text: string; at: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
 
   useEffect(() => {
     pausedRef.current = !!paused;
@@ -39,8 +40,16 @@ export function Scanner({ onResult, paused }: Props) {
 
     (async () => {
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setError("This browser does not support camera access. Use manual entry below.");
+          return;
+        }
         const constraints: MediaStreamConstraints = {
-          video: { facingMode: { ideal: "environment" } },
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
           audio: false,
         };
         const controls = await reader.decodeFromConstraints(
@@ -63,6 +72,15 @@ export function Scanner({ onResult, paused }: Props) {
           return;
         }
         controlsRef.current = controls;
+        // Some browsers (esp. iOS Safari) block autoplay until user gesture.
+        const v = videoRef.current;
+        if (v) {
+          try {
+            await v.play();
+          } catch {
+            setNeedsTap(true);
+          }
+        }
         setReady(true);
       } catch (e: any) {
         const name = e?.name || "";
@@ -70,6 +88,10 @@ export function Scanner({ onResult, paused }: Props) {
           setError("Camera access denied. Allow camera permission, or use manual entry below.");
         } else if (name === "NotFoundError") {
           setError("No camera found on this device. Use manual entry below.");
+        } else if (name === "NotReadableError") {
+          setError("Camera is in use by another app. Close it and reload.");
+        } else if (name === "OverconstrainedError") {
+          setError("Camera does not support requested settings. Use manual entry below.");
         } else {
           setError("Could not start the camera. Use manual entry below.");
         }
@@ -86,6 +108,15 @@ export function Scanner({ onResult, paused }: Props) {
     };
   }, [onResult]);
 
+  const handleTapToStart = async () => {
+    try {
+      await videoRef.current?.play();
+      setNeedsTap(false);
+    } catch {
+      /* still blocked */
+    }
+  };
+
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-black">
       <div className="aspect-[4/3] w-full">
@@ -94,6 +125,7 @@ export function Scanner({ onResult, paused }: Props) {
           className="h-full w-full object-cover"
           playsInline
           muted
+          autoPlay
         />
       </div>
       {/* Corner brackets overlay */}
@@ -114,6 +146,16 @@ export function Scanner({ onResult, paused }: Props) {
           <CameraOff className="h-6 w-6" />
           <span className="text-sm">{error}</span>
         </div>
+      )}
+      {needsTap && !error && (
+        <button
+          type="button"
+          onClick={handleTapToStart}
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/70 text-white"
+        >
+          <Camera className="h-8 w-8" />
+          <span className="text-sm font-medium">Tap to start camera</span>
+        </button>
       )}
     </div>
   );
