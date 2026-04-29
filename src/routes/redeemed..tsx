@@ -13,7 +13,7 @@ import { getReward } from "@/lib/rewards";
 import { useSiteCopy } from "@/hooks/use-site-copy";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/redeemed/$code")({
+export const Route = createFileRoute("/redeemed/")({
   loader: async ({ params }) => {
     const [data, status] = await Promise.all([
       fetchReceipt({ data: { code: params.code } }),
