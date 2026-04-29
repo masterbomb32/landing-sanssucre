@@ -104,6 +104,12 @@ function Index() {
               </a>
               <ShareButton />
             </div>
+
+            <p className="mt-4 text-sm">
+              <Link to="/find" className="text-foreground/70 underline underline-offset-4 hover:text-foreground">
+                {siteCopy.findMyReward.linkLabel}
+              </Link>
+            </p>
           </div>
         </div>
       </section>
@@ -138,6 +144,10 @@ function Index() {
         <p className="mt-1">
           <Link to="/privacy" className="hover:text-foreground">
             {siteCopy.footer.privacyLabel}
+          </Link>
+          <span className="px-2 text-muted-foreground/60">·</span>
+          <Link to="/find" className="hover:text-foreground">
+            Find my reward
           </Link>
         </p>
       </footer>
