@@ -9,6 +9,7 @@ import { fetchReceipt } from "@/server/receipt.functions";
 import { getReward } from "@/lib/rewards";
 import { siteCopy } from "@/lib/site-copy";
 import { formatDate } from "@/lib/format-date";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/receipt/$code")({
   loader: async ({ params }) => {
@@ -62,6 +63,50 @@ function ReceiptPage() {
   const isRedeemed = !!data.redeemed_at;
   const issued = new Date(data.created_at);
   const [justRedeemed, setJustRedeemed] = useState(false);
+
+  // Keep screen awake + nudge user to brighten the display so the QR scans faster.
+  useEffect(() => {
+    if (isRedeemed) return;
+    let wakeLock: { release: () => Promise<void> } | null = null;
+
+    interface WakeLockNavigator {
+      wakeLock?: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> };
+    }
+    const nav = navigator as Navigator & WakeLockNavigator;
+
+    const acquire = async () => {
+      try {
+        if (nav.wakeLock?.request) {
+          wakeLock = await nav.wakeLock.request("screen");
+        }
+      } catch {
+        /* user denied or unsupported — ignore */
+      }
+    };
+    acquire();
+
+    // Re-acquire when the tab becomes visible again
+    const onVisible = () => {
+      if (document.visibilityState === "visible") acquire();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    // One-time brightness tip on small screens
+    const TIP_KEY = "ss_brightness_tip_shown";
+    const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+    if (isMobile && typeof sessionStorage !== "undefined" && !sessionStorage.getItem(TIP_KEY)) {
+      sessionStorage.setItem(TIP_KEY, "1");
+      // Small delay so it doesn't fire before the page paints
+      setTimeout(() => {
+        toast("Tip: turn your brightness up for a faster scan.", { duration: 5000 });
+      }, 800);
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      wakeLock?.release().catch(() => undefined);
+    };
+  }, [isRedeemed]);
 
   // Live-watch for redemption: realtime + 5s polling fallback. Stops after 30 min.
   useEffect(() => {
