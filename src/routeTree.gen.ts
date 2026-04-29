@@ -9,14 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RedeemRouteImport } from './routes/redeem'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as RedeemedCodeRouteImport } from './routes/redeemed.$code'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
 
+const RedeemRoute = RedeemRouteImport.update({
+  id: '/redeem',
+  path: '/redeem',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -42,6 +49,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const RedeemedCodeRoute = RedeemedCodeRouteImport.update({
+  id: '/redeemed/$code',
+  path: '/redeemed/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReceiptCodeRoute = ReceiptCodeRouteImport.update({
   id: '/receipt/$code',
   path: '/receipt/$code',
@@ -58,16 +70,20 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
+  '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
+  '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -76,8 +92,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
+  '/redeem': typeof RedeemRoute
   '/admin/copy': typeof AdminCopyRoute
   '/receipt/$code': typeof ReceiptCodeRoute
+  '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -87,19 +105,31 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/privacy'
+    | '/redeem'
     | '/admin/copy'
     | '/receipt/$code'
+    | '/redeemed/$code'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/privacy' | '/admin/copy' | '/receipt/$code' | '/admin'
+  to:
+    | '/'
+    | '/login'
+    | '/privacy'
+    | '/redeem'
+    | '/admin/copy'
+    | '/receipt/$code'
+    | '/redeemed/$code'
+    | '/admin'
   id:
     | '__root__'
     | '/'
     | '/admin'
     | '/login'
     | '/privacy'
+    | '/redeem'
     | '/admin/copy'
     | '/receipt/$code'
+    | '/redeemed/$code'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -108,11 +138,20 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
+  RedeemRoute: typeof RedeemRoute
   ReceiptCodeRoute: typeof ReceiptCodeRoute
+  RedeemedCodeRoute: typeof RedeemedCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/redeem': {
+      id: '/redeem'
+      path: '/redeem'
+      fullPath: '/redeem'
+      preLoaderRoute: typeof RedeemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -148,6 +187,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/redeemed/$code': {
+      id: '/redeemed/$code'
+      path: '/redeemed/$code'
+      fullPath: '/redeemed/$code'
+      preLoaderRoute: typeof RedeemedCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/receipt/$code': {
       id: '/receipt/$code'
       path: '/receipt/$code'
@@ -182,17 +228,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
+  RedeemRoute: RedeemRoute,
   ReceiptCodeRoute: ReceiptCodeRoute,
+  RedeemedCodeRoute: RedeemedCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

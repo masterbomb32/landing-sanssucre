@@ -34,4 +34,17 @@ export const siteCopy = {
     description:
       "Sign up, pick a treat, and visit Sans Sucre on opening day at Metro Supermarket, Alabang Town Center.",
   },
+  thankYou: {
+    headline: "Enjoy your treat!",
+    sub: "Thanks for celebrating opening day with us.",
+    feedbackPrompt: "How was your visit?",
+    feedbackPlaceholder: "Anything you'd like us to know? (optional)",
+    feedbackSubmit: "Send feedback",
+    feedbackThanks: "Thank you for your feedback!",
+    shareText: "I just claimed my Sans Sucre opening day treat 🧁",
+  },
+  futureRewards: {
+    heading: "What's next at Sans Sucre",
+    body: "We'll be posting weekly specials and members-only previews. Watch this space — and your inbox.",
+  },
 } as const;
