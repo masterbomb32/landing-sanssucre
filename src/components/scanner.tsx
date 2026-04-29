@@ -34,8 +34,8 @@ export function Scanner({ onResult, paused }: Props) {
     let cancelled = false;
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [
-      BarcodeFormat.CODE_128,
       BarcodeFormat.QR_CODE,
+      BarcodeFormat.CODE_128,
     ]);
     hints.set(DecodeHintType.TRY_HARDER, true);
     hints.set(DecodeHintType.ASSUME_CODE_39_CHECK_DIGIT, false);
