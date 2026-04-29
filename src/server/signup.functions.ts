@@ -47,6 +47,16 @@ export const createSignup = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const mobile = normalizeMobile(data.mobile);
 
+    // Enforce one signup per mobile (DB also has a unique constraint)
+    const { data: existing } = await supabaseAdmin
+      .from("signups")
+      .select("redemption_code")
+      .eq("mobile", mobile)
+      .maybeSingle();
+    if (existing?.redemption_code) {
+      return { code: existing.redemption_code, alreadyRegistered: true };
+    }
+
     // Try a handful of times in the (extremely unlikely) event of a code collision
     for (let attempt = 0; attempt < 5; attempt++) {
       const code = generateCode();
@@ -64,7 +74,7 @@ export const createSignup = createServerFn({ method: "POST" })
 
       if (!error && row) {
         // Fire-and-forget notifications — added in a later step.
-        return { code: row.redemption_code };
+        return { code: row.redemption_code, alreadyRegistered: false };
       }
 
       if (error && !`${error.message}`.toLowerCase().includes("duplicate")) {
