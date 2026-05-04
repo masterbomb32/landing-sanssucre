@@ -27,7 +27,9 @@ export const Route = createFileRoute("/")({
 function Index() {
   useTrackVisit("/");
   const siteCopy = useSiteCopy();
+  const heroRef = useRef<HTMLElement | null>(null);
   const formRef = useRef<HTMLElement | null>(null);
+  const [heroVisible, setHeroVisible] = useState(true);
   const [formVisible, setFormVisible] = useState(false);
   useEffect(() => {
     const el = formRef.current;
@@ -35,6 +37,16 @@ function Index() {
     const observer = new IntersectionObserver(
       ([entry]) => setFormVisible(entry.isIntersecting),
       { rootMargin: "0px 0px -30% 0px", threshold: 0 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroVisible(entry.isIntersecting),
+      { threshold: 0.05 },
     );
     observer.observe(el);
     return () => observer.disconnect();
