@@ -133,24 +133,8 @@ function ReceiptPage() {
       }
     };
 
-    // Realtime: any UPDATE on this row triggers a re-check.
-    const channel = supabase
-      .channel(`signup-${data.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "signups",
-          filter: `id=eq.${data.id}`,
-        },
-        () => {
-          checkOnce();
-        },
-      )
-      .subscribe();
-
-    // Polling fallback every 5s.
+    // Poll every 5s for redemption status. (Realtime subscription removed
+    // to avoid exposing signups PII to all authenticated subscribers.)
     pollTimer = setInterval(checkOnce, 5000);
 
     // Stop after 30 minutes to save battery.
@@ -163,7 +147,6 @@ function ReceiptPage() {
       cancelled = true;
       if (pollTimer) clearInterval(pollTimer);
       if (stopTimer) clearTimeout(stopTimer);
-      supabase.removeChannel(channel);
     };
   }, [code, data.id, isRedeemed, router]);
 
