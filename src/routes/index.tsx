@@ -55,7 +55,7 @@ function Index() {
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Cinematic full-bleed hero */}
-      <section className="relative isolate min-h-[78vh] overflow-hidden md:min-h-[85vh]">
+      <section ref={heroRef} className="relative isolate min-h-[78vh] overflow-hidden md:min-h-[85vh]">
         <picture>
           <source srcSet={heroWebp} type="image/webp" />
           <img
@@ -167,9 +167,9 @@ function Index() {
       {/* Sticky mobile CTA — auto-hides when the form is visible */}
       <a
         href="#claim"
-        aria-hidden={formVisible}
+        aria-hidden={heroVisible || formVisible}
         className={`fixed inset-x-0 bottom-0 z-40 mx-3 mb-3 flex h-12 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground shadow-lg transition-all duration-300 md:hidden ${
-          formVisible ? "pointer-events-none translate-y-20 opacity-0" : "translate-y-0 opacity-100"
+          heroVisible || formVisible ? "pointer-events-none translate-y-20 opacity-0" : "translate-y-0 opacity-100"
         }`}
       >
         {siteCopy.stickyCta}
