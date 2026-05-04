@@ -2,7 +2,6 @@ import { createFileRoute, Link, notFound, useRouter, redirect } from "@tanstack/
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
 import { Check, Calendar, MapPin } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
 import { fetchReceipt } from "@/server/receipt.functions";
