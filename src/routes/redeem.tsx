@@ -95,22 +95,6 @@ function RedeemStation() {
     if (unlocked) loadCount();
   }, [unlocked, loadCount]);
 
-  const writeAudit = useCallback(
-    async (code: string, action: "redeem" | "unredeem" | "test_redeem", note?: string) => {
-      try {
-        await supabase.from("redemption_audit").insert({
-          code,
-          action,
-          station: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 64) : null,
-          note: note ?? null,
-        });
-      } catch {
-        /* non-blocking */
-      }
-    },
-    [],
-  );
-
   const processCode = useCallback(
     async (rawCode: string) => {
       if (busy) return;
@@ -204,7 +188,6 @@ function RedeemStation() {
         createdAt: row?.created_at ?? "",
         isTest: isPrefixTest,
       });
-      writeAudit(code, isPrefixTest ? "test_redeem" : "redeem");
       loadCount();
       setManualCode("");
       // Initialize countdown — handled by effect below. 0 = no auto-clear.
@@ -213,7 +196,7 @@ function RedeemStation() {
       // Arm the undo window
       setUndoSecondsLeft(UNDO_WINDOW_SECONDS);
     },
-    [busy, loadCount, holdSeconds, testMode, writeAudit],
+    [busy, loadCount, holdSeconds, testMode],
   );
 
   // Countdown ticker for the success card
@@ -270,14 +253,13 @@ function RedeemStation() {
       return;
     }
     playBeep(false);
-    writeAudit(code, "unredeem");
     toast.success("Redemption reverted.");
     loadCount();
     setResult(null);
     setScanning(true);
     setCountdown(null);
     setUndoSecondsLeft(null);
-  }, [result, undoing, testMode, loadCount, writeAudit]);
+  }, [result, undoing, testMode, loadCount]);
 
   const reset = () => {
     setResult(null);
