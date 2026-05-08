@@ -69,4 +69,15 @@ export const siteCopy = {
     notFound: "We couldn't find a reward for that number. Double-check it, or sign up at the home page.",
     placeholder: "09171234567",
   },
+  opening: {
+    date: "2026-06-15T10:00:00+08:00",
+    label: "June 15, 2026 · 10:00 AM",
+  },
+  receipt: {
+    openingNotice:
+      "To claim your reward on opening day, remember the code or get a printed copy of this page from our staff at the store.",
+    communityCount:
+      "treats reserved in the Alabang Town community",
+    findMyRewardCta: "Lost this page? Find my reward by phone →",
+  },
 } as const;
