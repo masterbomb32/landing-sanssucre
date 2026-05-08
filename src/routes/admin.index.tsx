@@ -502,3 +502,33 @@ function MiniStat({ label, value }: { label: string; value: number | string }) {
     </div>
   );
 }
+
+function BreakdownBars({
+  title,
+  data,
+  total,
+}: {
+  title: string;
+  data: Record<string, number>;
+  total: number;
+}) {
+  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0 || total === 0) return null;
+  return (
+    <div className="mt-3 space-y-1">
+      <div className="text-xs text-muted-foreground">{title}</div>
+      {entries.map(([label, n]) => {
+        const pct = (n / total) * 100;
+        return (
+          <div key={label} className="flex items-center gap-2 text-xs">
+            <span className="w-16 truncate text-muted-foreground">{label}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="w-8 text-right tabular-nums">{n}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
