@@ -276,6 +276,11 @@ function Dashboard() {
                 ))}
             </div>
           )}
+          <BreakdownBars title="By OS" data={landingStats.byOS} total={landingStats.totalVisits} />
+          <BreakdownBars title="By device" data={landingStats.byDevice} total={landingStats.totalVisits} />
+          <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
+            Country breakdown — coming soon
+          </div>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
