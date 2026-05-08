@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Download, Check, Star, Share2, Eye, Mail } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
+import { parseUA } from "@/lib/parse-ua";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
@@ -28,6 +29,7 @@ interface Visit {
   path: string;
   referrer: string | null;
   created_at: string;
+  user_agent?: string | null;
 }
 
 interface ShareEvent {
@@ -70,7 +72,7 @@ function Dashboard() {
         .limit(1000),
       supabase
         .from("page_visits")
-        .select("visitor_hash,path,referrer,created_at")
+        .select("visitor_hash,path,referrer,created_at,user_agent")
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
@@ -104,6 +106,8 @@ function Dashboard() {
 
   useEffect(() => {
     load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
   }, []);
 
   const filtered = useMemo(() => {
@@ -136,7 +140,14 @@ function Dashboard() {
     const conv = uniqueVisitors > 0 ? Math.round(((rows?.length ?? 0) / uniqueVisitors) * 100) : 0;
     const byPath: Record<string, number> = {};
     for (const v of visits) byPath[v.path] = (byPath[v.path] ?? 0) + 1;
-    return { totalVisits, uniqueVisitors, conv, byPath };
+    const byOS: Record<string, number> = {};
+    const byDevice: Record<string, number> = {};
+    for (const v of visits) {
+      const { os, device } = parseUA(v.user_agent ?? null);
+      byOS[os] = (byOS[os] ?? 0) + 1;
+      byDevice[device] = (byDevice[device] ?? 0) + 1;
+    }
+    return { totalVisits, uniqueVisitors, conv, byPath, byOS, byDevice };
   }, [visits, rows]);
 
   const shareStats = useMemo(() => {
