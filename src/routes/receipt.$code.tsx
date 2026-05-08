@@ -1,13 +1,15 @@
 import { createFileRoute, Link, notFound, useRouter, redirect } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
-import { Check, Calendar, MapPin } from "lucide-react";
+import { Check, MapPin, Info, Search } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
+import { Countdown } from "@/components/countdown";
 import { fetchReceipt } from "@/server/receipt.functions";
+import { getReservationCount } from "@/server/stats.functions";
 import { getReward } from "@/lib/rewards";
 import { siteCopy } from "@/lib/site-copy";
-import { formatDate } from "@/lib/format-date";
+import { useSiteCopy } from "@/hooks/use-site-copy";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/receipt/$code")({
@@ -58,10 +60,26 @@ function ReceiptPage() {
   const { code } = Route.useParams();
   const data = Route.useLoaderData();
   const router = useRouter();
+  const copy = useSiteCopy();
   const reward = getReward(data.reward_choice);
   const isRedeemed = !!data.redeemed_at;
-  const issued = new Date(data.created_at);
   const [justRedeemed, setJustRedeemed] = useState(false);
+  const [reservedCount, setReservedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      try {
+        const r = await getReservationCount();
+        if (!cancelled) setReservedCount(r.total);
+      } catch {
+        /* ignore */
+      }
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 10000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
 
   // Keep screen awake + nudge user to brighten the display so the QR scans faster.
   useEffect(() => {
@@ -205,6 +223,17 @@ function ReceiptPage() {
             </div>
           )}
 
+          {/* Opening countdown strip */}
+          <div className="border-b border-primary/10 bg-primary/5 px-5 py-3 text-center">
+            <p className="font-display text-[10px] uppercase tracking-[0.32em] text-primary">
+              Opening on
+            </p>
+            <p className="mt-0.5 font-display text-sm font-semibold sm:text-base">
+              {copy.opening.label}
+            </p>
+            <Countdown targetISO={copy.opening.date} className="mt-2" />
+          </div>
+
           <div className="flex flex-1 flex-col px-5 py-4 sm:px-7 sm:py-5">
             {/* Greeting */}
             <p className="text-center font-display text-[10px] uppercase tracking-[0.28em] text-primary">
@@ -245,32 +274,41 @@ function ReceiptPage() {
                 </div>
               </div>
               <div className="mt-2 font-mono text-sm font-semibold tracking-[0.28em]">{code}</div>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                Or read out the code above
-              </p>
-            <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-              </span>
-              Waiting for staff to scan…
-            </div>
+              <div className="mt-2 inline-flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Waiting for staff to scan…
+              </div>
             </div>
 
-            {/* Info strip */}
-            <div className="mt-3 space-y-1.5 rounded-xl border bg-card p-3 text-[12px] leading-snug">
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" />
-                <div>
-                  <span className="font-semibold">Sans Sucre</span>
-                  <span className="text-muted-foreground"> — Inside Metro Supermarket, Alabang Town Center</span>
-                </div>
+            {/* Opening day notice */}
+            <div className="mt-3 flex items-start gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+              <Info className="mt-0.5 h-4 w-4 flex-none text-primary" />
+              <p className="text-left text-[11.5px] leading-snug text-foreground/80">
+                {copy.receipt.openingNotice}
+              </p>
+            </div>
+
+            {/* Live community count */}
+            {reservedCount !== null && reservedCount > 0 && (
+              <div className="mt-2 inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-secondary/60 px-3 py-1 text-[11px] text-foreground/70">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="tabular-nums font-semibold">{reservedCount.toLocaleString()}</span>
+                <span>{copy.receipt.communityCount}</span>
               </div>
-              <div className="flex items-start gap-2">
-                <Calendar className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" />
-                <div className="text-muted-foreground">
-                  Issued {formatDate(issued, "medium")} (PHT) · Show on opening day
-                </div>
+            )}
+
+            {/* Compact location strip */}
+            <div className="mt-3 flex items-start gap-2 rounded-xl border bg-card p-3 text-[12px] leading-snug">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" />
+              <div>
+                <span className="font-semibold">Sans Sucre</span>
+                <span className="text-muted-foreground"> — Inside Metro Supermarket, Alabang Town Center</span>
               </div>
             </div>
 
@@ -292,6 +330,15 @@ function ReceiptPage() {
               </a>
             </div>
 
+            {/* Lost-this-page CTA — prominent */}
+            <Link
+              to="/find"
+              className="mt-3 flex h-10 items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/40 bg-primary/5 text-[12.5px] font-medium text-primary hover:bg-primary/10"
+            >
+              <Search className="h-3.5 w-3.5" />
+              {copy.receipt.findMyRewardCta}
+            </Link>
+
             <p className="mt-2 text-center text-[10px] text-muted-foreground">
               One reward per person.
             </p>
@@ -300,7 +347,7 @@ function ReceiptPage() {
 
         <div className="mt-2 text-center sm:mt-3">
           <Link to="/" className="text-[11px] text-muted-foreground hover:text-foreground">
-            ← Back to sanssucre.ph
+            ← sanssucre.ph
           </Link>
         </div>
       </div>
