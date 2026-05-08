@@ -2,6 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { Star, Check, Instagram, Facebook, Mail, Loader2 } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
+import heroWebp from "@/assets/red-velvet-hero.webp";
+import heroPng from "@/assets/red-velvet-hero.png";
 import { ShareButton } from "@/components/share-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,8 +88,20 @@ function RedeemedPage() {
     <main className="flex min-h-[100dvh] items-center justify-center bg-background px-3 py-3 sm:px-4 sm:py-4">
       <div className="w-full max-w-md">
         <div className="overflow-hidden rounded-2xl border-2 border-primary/15 bg-card shadow-xl">
-          <div className="flex items-center justify-center gap-1.5 bg-emerald-500 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.25em] text-white">
-            <Check className="h-3 w-3" /> Redeemed
+          {/* Red velvet hero — no overlay */}
+          <div className="relative">
+            <picture>
+              <source srcSet={heroWebp} type="image/webp" />
+              <img
+                src={heroPng}
+                alt="A red velvet treat from Sans Sucre"
+                className="block h-40 w-full object-cover sm:h-48"
+                loading="eager"
+              />
+            </picture>
+            <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-white shadow-md">
+              <Check className="h-3 w-3" /> Redeemed
+            </span>
           </div>
 
           <div className="px-5 py-4 sm:px-6 sm:py-5">

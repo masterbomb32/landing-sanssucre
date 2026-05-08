@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Download, Check, Star, Share2, Eye, Mail } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
+import { parseUA } from "@/lib/parse-ua";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
@@ -28,6 +29,7 @@ interface Visit {
   path: string;
   referrer: string | null;
   created_at: string;
+  user_agent?: string | null;
 }
 
 interface ShareEvent {
@@ -70,7 +72,7 @@ function Dashboard() {
         .limit(1000),
       supabase
         .from("page_visits")
-        .select("visitor_hash,path,referrer,created_at")
+        .select("visitor_hash,path,referrer,created_at,user_agent")
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
@@ -104,6 +106,8 @@ function Dashboard() {
 
   useEffect(() => {
     load();
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
   }, []);
 
   const filtered = useMemo(() => {
@@ -136,7 +140,14 @@ function Dashboard() {
     const conv = uniqueVisitors > 0 ? Math.round(((rows?.length ?? 0) / uniqueVisitors) * 100) : 0;
     const byPath: Record<string, number> = {};
     for (const v of visits) byPath[v.path] = (byPath[v.path] ?? 0) + 1;
-    return { totalVisits, uniqueVisitors, conv, byPath };
+    const byOS: Record<string, number> = {};
+    const byDevice: Record<string, number> = {};
+    for (const v of visits) {
+      const { os, device } = parseUA(v.user_agent ?? null);
+      byOS[os] = (byOS[os] ?? 0) + 1;
+      byDevice[device] = (byDevice[device] ?? 0) + 1;
+    }
+    return { totalVisits, uniqueVisitors, conv, byPath, byOS, byDevice };
   }, [visits, rows]);
 
   const shareStats = useMemo(() => {
@@ -265,6 +276,11 @@ function Dashboard() {
                 ))}
             </div>
           )}
+          <BreakdownBars title="By OS" data={landingStats.byOS} total={landingStats.totalVisits} />
+          <BreakdownBars title="By device" data={landingStats.byDevice} total={landingStats.totalVisits} />
+          <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
+            Country breakdown — coming soon
+          </div>
         </div>
 
         <div className="rounded-xl border bg-card p-5">
@@ -483,6 +499,36 @@ function MiniStat({ label, value }: { label: string; value: number | string }) {
     <div className="rounded-lg bg-secondary/40 px-3 py-2">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className="mt-0.5 font-display text-lg font-bold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function BreakdownBars({
+  title,
+  data,
+  total,
+}: {
+  title: string;
+  data: Record<string, number>;
+  total: number;
+}) {
+  const entries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  if (entries.length === 0 || total === 0) return null;
+  return (
+    <div className="mt-3 space-y-1">
+      <div className="text-xs text-muted-foreground">{title}</div>
+      {entries.map(([label, n]) => {
+        const pct = (n / total) * 100;
+        return (
+          <div key={label} className="flex items-center gap-2 text-xs">
+            <span className="w-16 truncate text-muted-foreground">{label}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="w-8 text-right tabular-nums">{n}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

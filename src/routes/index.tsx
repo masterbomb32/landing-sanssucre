@@ -11,6 +11,8 @@ import { ShareButton } from "@/components/share-button";
 import { useTrackVisit } from "@/hooks/use-track-visit";
 import { siteCopy as defaults } from "@/lib/site-copy";
 import { useSiteCopy } from "@/hooks/use-site-copy";
+import { Countdown } from "@/components/countdown";
+import { getReservationCount } from "@/server/stats.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,6 +33,22 @@ function Index() {
   const formRef = useRef<HTMLElement | null>(null);
   const [heroVisible, setHeroVisible] = useState(true);
   const [formVisible, setFormVisible] = useState(false);
+  const [reservedCount, setReservedCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      try {
+        const r = await getReservationCount();
+        if (!cancelled) setReservedCount(r.total);
+      } catch {
+        /* ignore */
+      }
+    };
+    fetchCount();
+    const id = setInterval(fetchCount, 10000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, []);
   useEffect(() => {
     const el = formRef.current;
     if (!el) return;
@@ -88,26 +106,45 @@ function Index() {
               alt="Sans Sucre"
               width={480}
               height={128}
-              className="h-28 w-auto drop-shadow-md sm:h-40 lg:h-48"
+              className="hero-rise h-28 w-auto drop-shadow-md sm:h-40 lg:h-48"
               fetchPriority="high"
             />
-            <p className="mt-8 font-display text-xs uppercase sm:mt-10 sm:text-sm tracking-[0.35em] text-primary sm:text-sm">
+            <p className="hero-rise mt-8 font-display text-xs uppercase sm:mt-10 sm:text-sm tracking-[0.35em] text-primary sm:text-sm" style={{ animationDelay: "120ms" }}>
               {siteCopy.hero.eyebrow}
             </p>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl">
+            <h1 className="hero-rise mt-4 font-display text-4xl font-bold leading-[1.05] text-foreground drop-shadow-sm sm:text-5xl lg:text-6xl" style={{ animationDelay: "220ms" }}>
               {siteCopy.hero.headline.line1}
               <br />
               <span className="text-primary">{siteCopy.hero.headline.line2}</span>
             </h1>
-            <p className="mt-6 max-w-md text-base leading-relaxed text-foreground/80 sm:text-lg">
+            <p className="hero-rise mt-6 max-w-md text-base leading-relaxed text-foreground/80 sm:text-lg" style={{ animationDelay: "340ms" }}>
               {siteCopy.hero.sub}
             </p>
 
-            <p className="mt-6 text-sm font-medium text-foreground/80">
+            <p className="hero-rise mt-6 text-sm font-medium text-foreground/80" style={{ animationDelay: "440ms" }}>
               {siteCopy.hero.location}
             </p>
 
-            <div className="mt-8 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center">
+            {/* Countdown to opening */}
+            <div className="hero-rise mt-6 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg bg-background/60 px-3 py-2 backdrop-blur-sm" style={{ animationDelay: "520ms" }}>
+              <span className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">Opens in</span>
+              <Countdown targetISO={siteCopy.opening.date} compact className="text-sm" />
+              <span className="text-[11px] text-foreground/60">· {siteCopy.opening.label}</span>
+            </div>
+
+            {/* Live community count */}
+            {reservedCount !== null && reservedCount > 0 && (
+              <div className="hero-rise mt-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs text-foreground/80" style={{ animationDelay: "600ms" }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="tabular-nums font-semibold">{reservedCount.toLocaleString()}</span>
+                <span>{siteCopy.receipt.communityCount}</span>
+              </div>
+            )}
+
+            <div className="hero-rise mt-8 flex flex-col items-stretch gap-3 sm:mt-9 sm:flex-row sm:items-center" style={{ animationDelay: "680ms" }}>
               <a
                 href="#claim"
                 className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-6 font-medium text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
@@ -117,7 +154,7 @@ function Index() {
               <ShareButton />
             </div>
 
-            <p className="mt-4 text-sm">
+            <p className="hero-rise mt-4 text-sm" style={{ animationDelay: "760ms" }}>
               <Link to="/find" className="text-foreground/70 underline underline-offset-4 hover:text-foreground">
                 {siteCopy.findMyReward.linkLabel}
               </Link>
