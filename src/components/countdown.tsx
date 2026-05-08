@@ -27,6 +27,8 @@ export function Countdown({
 }) {
   const target = new Date(targetISO).getTime();
   const [t, setT] = useState(() => diff(target));
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (Number.isNaN(target)) return;
@@ -35,6 +37,7 @@ export function Countdown({
   }, [target]);
 
   if (Number.isNaN(target)) return null;
+  if (!mounted) return <span className={className} suppressHydrationWarning />;
 
   if (t.done) {
     return (
