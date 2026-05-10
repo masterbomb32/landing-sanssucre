@@ -48,7 +48,6 @@ const FIELDS: { key: string; label: string; multiline?: boolean; defaultValue: s
   { key: "receipt.openingNotice", label: "Receipt page — opening day notice", multiline: true, defaultValue: siteCopy.receipt.openingNotice },
   { key: "receipt.communityCount", label: "Receipt/home — live community count suffix", defaultValue: siteCopy.receipt.communityCount },
   { key: "receipt.findMyRewardCta", label: "Receipt — 'find my reward' CTA label", defaultValue: siteCopy.receipt.findMyRewardCta },
-  { key: "staff.redeem_pin", label: "Staff redeem PIN (4–6 digits, default 1234)", defaultValue: "1234" },
   { key: "staff.redeem_hold_seconds", label: "Staff redeem confirmation hold (seconds, 0 = stay until dismissed)", defaultValue: "8" },
   { key: "staff.test_mode", label: "Staff test mode — off | fake | prefix  (fake = no DB writes; prefix = only codes starting with TEST will redeem)", defaultValue: "off" },
 ];
