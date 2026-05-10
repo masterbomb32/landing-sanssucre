@@ -25,7 +25,6 @@ const SESSION_KEY = "sanssucre_redeem_unlocked";
 const HOLD_SETTING_KEY = "staff.redeem_hold_seconds";
 const TEST_MODE_KEY = "staff.test_mode"; // values: "off" | "fake" | "prefix"
 const UNDO_WINDOW_SECONDS = 30;
-const DEFAULT_PIN = "1234";
 const DEFAULT_HOLD_SECONDS = 8;
 
 type TestMode = "off" | "fake" | "prefix";
