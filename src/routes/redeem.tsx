@@ -22,7 +22,6 @@ export const Route = createFileRoute("/redeem")({
 });
 
 const SESSION_KEY = "sanssucre_redeem_unlocked";
-const PIN_SETTING_KEY = "staff.redeem_pin";
 const HOLD_SETTING_KEY = "staff.redeem_hold_seconds";
 const TEST_MODE_KEY = "staff.test_mode"; // values: "off" | "fake" | "prefix"
 const UNDO_WINDOW_SECONDS = 30;
@@ -40,7 +39,6 @@ type Result =
 function RedeemStation() {
   const [unlocked, setUnlocked] = useState(false);
   const [loadingPin, setLoadingPin] = useState(true);
-  const [pin, setPin] = useState(DEFAULT_PIN);
   const [holdSeconds, setHoldSeconds] = useState<number>(DEFAULT_HOLD_SECONDS);
   const [testMode, setTestMode] = useState<TestMode>("off");
   const [scanning, setScanning] = useState(true);
@@ -62,14 +60,11 @@ function RedeemStation() {
       const { data } = await supabase
         .from("site_settings")
         .select("key,value")
-        .in("key", [PIN_SETTING_KEY, HOLD_SETTING_KEY, TEST_MODE_KEY]);
+        .in("key", [HOLD_SETTING_KEY, TEST_MODE_KEY]);
       for (const row of data ?? []) {
         const v = typeof row.value === "string"
           ? row.value
           : (row.value as { v?: string })?.v;
-        if (row.key === PIN_SETTING_KEY && typeof v === "string" && /^\d{4,6}$/.test(v)) {
-          setPin(v);
-        }
         if (row.key === HOLD_SETTING_KEY && typeof v === "string") {
           const n = parseInt(v, 10);
           if (!Number.isNaN(n) && n >= 0 && n <= 120) setHoldSeconds(n);
@@ -288,8 +283,12 @@ function RedeemStation() {
       <main className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-10">
         <img src={logo} alt="Sans Sucre" className="mb-6 h-14 w-auto" />
         <PinPad
-          expectedPin={pin}
           hint="Enter staff PIN to start redeeming"
+          onVerify={async (entered) => {
+            const { data, error } = await supabase.rpc("verify_staff_pin", { p_pin: entered });
+            if (error) return false;
+            return data === true;
+          }}
           onUnlock={() => {
             sessionStorage.setItem(SESSION_KEY, "1");
             setUnlocked(true);
