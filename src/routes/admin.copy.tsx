@@ -48,7 +48,6 @@ const FIELDS: { key: string; label: string; multiline?: boolean; defaultValue: s
   { key: "receipt.openingNotice", label: "Receipt page — opening day notice", multiline: true, defaultValue: siteCopy.receipt.openingNotice },
   { key: "receipt.communityCount", label: "Receipt/home — live community count suffix", defaultValue: siteCopy.receipt.communityCount },
   { key: "receipt.findMyRewardCta", label: "Receipt — 'find my reward' CTA label", defaultValue: siteCopy.receipt.findMyRewardCta },
-  { key: "staff.redeem_pin", label: "Staff redeem PIN (4–6 digits, default 1234)", defaultValue: "1234" },
   { key: "staff.redeem_hold_seconds", label: "Staff redeem confirmation hold (seconds, 0 = stay until dismissed)", defaultValue: "8" },
   { key: "staff.test_mode", label: "Staff test mode — off | fake | prefix  (fake = no DB writes; prefix = only codes starting with TEST will redeem)", defaultValue: "off" },
 ];
@@ -99,6 +98,7 @@ function CopyEditor() {
           Changes apply immediately on the public site. Leave a field at its default to use the original wording.
         </p>
       </div>
+      <StaffPinSection />
       <div className="space-y-5 rounded-2xl border bg-card p-6">
         {FIELDS.map((f) => (
           <div key={f.key} className="space-y-1.5">
@@ -125,5 +125,54 @@ function CopyEditor() {
         </Button>
       </div>
     </main>
+  );
+}
+
+function StaffPinSection() {
+  const [pin, setPin] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!/^\d{4,6}$/.test(pin)) {
+      toast.error("PIN must be 4–6 digits.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.rpc("update_staff_pin", { p_pin: pin });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message || "Could not update PIN.");
+      return;
+    }
+    setPin("");
+    toast.success("Staff PIN updated.");
+  };
+
+  return (
+    <div className="mb-6 space-y-3 rounded-2xl border bg-card p-6">
+      <div>
+        <h2 className="font-display text-lg font-semibold">Staff redeem PIN</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Stored in an admin-only table. Enter a new 4–6 digit PIN to rotate it. The current PIN is never displayed.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          type="password"
+          inputMode="numeric"
+          pattern="\d{4,6}"
+          maxLength={6}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="New PIN (4–6 digits)"
+          className="font-mono tracking-widest"
+          autoComplete="new-password"
+        />
+        <Button onClick={save} disabled={saving || pin.length < 4}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Update PIN
+        </Button>
+      </div>
+    </div>
   );
 }

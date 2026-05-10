@@ -246,6 +246,27 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -301,6 +322,8 @@ export type Database = {
           redemption_code: string
         }[]
       }
+      update_staff_pin: { Args: { p_pin: string }; Returns: undefined }
+      verify_staff_pin: { Args: { p_pin: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin"
