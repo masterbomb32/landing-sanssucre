@@ -1,53 +1,145 @@
-# Goal
+# Sans Sucre — Development Timeline, Checklist & Feature-Freeze Policy
 
-`/receipt/$code` must fit within `100dvh` on every device (mobile ~375×667+, tablet ~768×1024, desktop ≥1280×720) with **no vertical scrolling**. Currently the card overflows on short viewports because of stacked sections (countdown strip, greeting, reward block, QR, opening notice, live count, location, actions, find-CTA, fine print).
+Assumes opening day = **Mon 15 Jun 2026** (today: Sun 10 May 2026 → ~5 weeks runway). Adjust dates if opening shifts.
 
-# Approach
+---
 
-Keep the same content but tighten the layout so the card always equals viewport height. Use a fluid scale (clamp) for spacing/typography and a 2-column layout on wider screens so vertical content shrinks.
+## Timeline at a glance
 
-## Layout changes
+```
+Week of   Phase                                         Gate at end of week
+-------   --------------------------------------------  -----------------------------
+May 11    SPRINT A — Pre-launch security (5.3 + 5.4)    Security freeze
+May 18    SPRINT B — Phase 1 staff ops (1.3 + 1.4)      Staff-flow freeze
+May 25    SPRINT C — Phase 2 landing polish             Content freeze
+Jun 01    SPRINT D — Phase 3 SEO/share + Phase 4 lite   Code freeze
+Jun 08    SPRINT E — Hard freeze, QA, soak, dry-run     Launch-ready freeze
+Jun 15    LAUNCH WEEK — monitor only, hotfix-only       Post-launch retro
+Jun 22+   Phase 4 full analytics + nice-to-haves        Resume normal dev
+```
 
-1. **Shell**
-   - Replace `min-h-[100dvh]` + `py-3/py-5` with a fixed `h-[100dvh]` flex column and `overflow-hidden`.
-   - Remove the bottom `← sanssucre.ph` link from the flow on short viewports (move into the card footer line, same row as "One reward per person").
-   - Remove the `@media (max-height: 640px)` override that allowed scroll — we want no scroll, ever.
+Each sprint is one calendar week. If a sprint slips, the next sprint absorbs the slip — do **not** parallel-track new features into a sprint mid-week.
 
-2. **Responsive card width**
-   - Mobile: `max-w-md` (current).
-   - Tablet (`md:`): `max-w-2xl`, single column still but tighter.
-   - Desktop (`lg:`): `max-w-4xl` two-column grid inside the card:
-     - Left column: header strip + greeting + reward + opening notice + location + actions + find-CTA.
-     - Right column: QR block + countdown strip + live community count.
-   - Status banner + "Already redeemed" banner span both columns at top.
+---
 
-3. **Density**
-   - Convert vertical paddings from fixed `py-3/py-4/py-5` to `py-[clamp(0.5rem,1.5vh,1rem)]`.
-   - Reduce gaps between blocks via `space-y-[clamp(0.5rem,1.2vh,0.875rem)]` instead of per-block `mt-3`.
-   - QR size: `clamp(120px, 22vh, 168px)` so it shrinks on short screens.
-   - Logo height: `clamp(28px, 4.5vh, 44px)`.
-   - Title font-size: `clamp(1.05rem, 2.6vh, 1.5rem)`.
+## Sprint A — Pre-launch security (May 11 – May 17)
 
-4. **Trim non-essentials on short viewports**
-   - Hide `reward.description` (line-clamp-2 paragraph) below `h-[640px]`.
-   - Collapse "Save / Print" + "Share" into icon-only buttons on `h-[640px]`.
-   - The brightness toast already self-dismisses — no change.
+Must ship before any marketing push. These are exploitable today.
 
-5. **No content removed** — every element stays present at all breakpoints, just rescaled / repositioned.
+- [ ] **5.4a** Move `staff.redeem_pin` out of public `site_settings` → new admin-only `staff_settings` table + `verifyStaffPin` server fn; update `PinPad`
+- [ ] **5.4b** Lock `mailing_subscriptions` INSERT behind a server fn that verifies the redemption code (revoke direct anon insert)
+- [ ] **5.3** Security headers (CSP, HSTS, Referrer-Policy, Permissions-Policy `camera=(self)`, X-Content-Type-Options, X-Frame-Options) via root response middleware
+- [ ] Toggle Leaked-Password Protection in Lovable Cloud auth
+- [ ] Doc: DNS recommendations (DNSSEC, CAA) for `sanssucre.ph` owner
 
-## Verification
+**Exit gate:** security linter clean, manual test of staff PIN + mailing signup still works, headers verified in browser devtools.
 
-- Test in preview at 375×667, 390×844, 768×1024, 1024×768, 1280×720, 1440×900.
-- Confirm `document.documentElement.scrollHeight === window.innerHeight` on each.
-- Take screenshots of mobile + desktop.
+---
 
-## Files
+## Sprint B — Phase 1 staff operations (May 18 – May 24)
 
-- `src/routes/receipt.$code.tsx` — restructure JSX + classes only. No business logic, no data fetch changes.
-- `src/styles.css` — none needed (using inline clamp + Tailwind arbitrary values).
+- [ ] **1.3** Admin manual edit of signup (mobile/email/name) with `edited_at / edited_by / edit_reason` columns + `updateSignup` server fn + dialog in `/admin`
+- [ ] **1.4** Offline fallback for `/redeem`: Service Worker shell cache + IndexedDB `offline_queue` + background sync (Metro basement WiFi is unreliable)
+- [ ] Dashboard date-range filter (Today / Yesterday / 7d / 30d / 90d / Custom)
+- [ ] Dashboard country breakdown (replace "coming soon")
 
-## Out of scope
+**Exit gate:** end-to-end staff dry-run on a phone with airplane mode toggled mid-scan.
 
-- `/redeemed/$code` page (separate layout).
-- Copy text changes.
-- Server functions / data flow.
+---
+
+## Sprint C — Phase 2 landing polish (May 25 – May 31)
+
+Conversion-focused. Needs creative assets.
+
+- [ ] **2.3** Trust strip (Metro Alabang + ATC logos) under hero
+- [ ] **2.4** Reward preview gallery (one image per reward; AI-generate placeholders, swap if real photos arrive)
+- [ ] **2.5** FAQ accordion + `FAQPage` JSON-LD
+- [ ] **2.6** Lazy-loaded Google Maps embed + "Get directions" deep link
+- [ ] **2.7** Founder / about block (one photo + 2–3 sentences)
+- [ ] **2.9** Exit-intent (desktop mouseleave) + mobile 70%-scroll nudge, suppressed if signed up
+
+**Exit gate:** Lighthouse mobile ≥ 90 perf / 100 SEO / 100 a11y on `/`.
+
+---
+
+## Sprint D — Phase 3 SEO/share + Phase 4 lite (Jun 1 – Jun 7)
+
+- [ ] **3.1** DPA consent line under feedback (RA 10173 + link to `/privacy`)
+- [ ] **3.2** Branded OG image (1200×630) "Free opening day treat — Sans Sucre @ Metro Alabang" + Twitter card meta
+- [ ] **3.2** Per-route `head()` for `/find`, `/privacy`, `/redeemed/$code`
+- [ ] **3.3** `LocalBusiness` JSON-LD (root) + `Event` opening-day JSON-LD (home)
+- [ ] **3.4** "Tag us @sanssucre.ph" prompt in share sheet
+- [ ] **4.1 (lite)** Add the 7 funnel events (`landing_view, form_focus, signup_submitted, receipt_view, code_redeemed, feedback_submitted, mailing_list_joined`) — instrumentation only, chart can wait
+
+**Exit gate:** share preview rendered in WhatsApp + Messenger + iMessage screenshots match.
+
+---
+
+## Sprint E — Hard freeze, QA, dry-run (Jun 8 – Jun 14)
+
+**No new features.** Bugfix + content tweaks only.
+
+- [ ] Full smoke test (sections A–I in `.lovable/plan.md`) on iOS Safari, Android Chrome, desktop Chrome/Safari
+- [ ] Load test signup → receipt → redeem with 50 fake codes
+- [ ] Staff dry-run at the actual store with the actual phone
+- [ ] Monitor Cloud logs + DB for warnings; clear linter
+- [ ] Backup: export `signups` snapshot before opening day
+- [ ] Print fallback: laminated card with PIN + "what to do if internet dies"
+- [ ] On-call rotation defined (who fixes what, where the secrets live)
+
+**Exit gate:** zero open P0/P1 bugs. Sign-off from owner.
+
+---
+
+## Launch week (Jun 15 – Jun 21) — hotfix only
+
+- [ ] Real-time monitoring of `redemption_audit` + `client_errors`
+- [ ] Daily check-in: signup count, redeem count, error count, feedback themes
+- [ ] **No code merges except hotfixes** (1-line, reviewed, tested in preview first)
+
+---
+
+## Post-launch (Jun 22+)
+
+- [ ] **4.1 full** Funnel chart in admin dashboard
+- [ ] **4.2** Client-side error tracker (`/api/public/log-error` + `client_errors` table + admin panel)
+- [ ] Earlier ideas: persistent brightness tip, customer-side reward photo previews
+- [ ] Retrospective + new roadmap
+
+---
+
+## Feature-freeze policy (recommended)
+
+Three escalating freezes. Communicate the date for each in the team chat.
+
+| Freeze | When | What it means |
+|---|---|---|
+| **Content freeze** | End of Sprint C (May 31) | No new pages, no new copy fields. Existing copy still editable via `/admin/copy`. |
+| **Code freeze** | End of Sprint D (Jun 7) | No new features merged. Schema migrations only for bugfixes. UI tweaks limited to spacing/typo. |
+| **Hard freeze** | End of Sprint E (Jun 14) | Hotfix-only. Every change must have: 1-line scope, preview-tested, owner sign-off, rollback plan. Schema migrations forbidden. |
+
+### Rules during freeze
+
+1. **One in-progress task at a time.** No parallel branches.
+2. **Every change ships behind a known-good preview.** Test on the real device before promoting to production.
+3. **Schema changes are the highest-risk** — none after code freeze. If absolutely required, add a column nullable, never drop/rename.
+4. **Copy changes go through `/admin/copy`**, not code edits. That's why the editable-copy system exists.
+5. **Any "while we're at it..." idea goes to the post-launch backlog.** No exceptions during freezes — that's how launches break.
+6. **Define the rollback.** Lovable's version history = your rollback. Note the last-good version ID at the start of each launch-week day.
+
+### Branch / version hygiene
+
+- Tag the last-good preview at the start of each freeze (`pre-content-freeze`, `pre-code-freeze`, `pre-launch`).
+- Keep a one-page runbook in `.lovable/runbook.md` (admin login, PIN reset, how to revoke a code, who to call).
+
+---
+
+## Out of scope (explicit non-goals before launch)
+
+- Customer accounts / login (codes are the identity)
+- Multi-store support
+- Loyalty / repeat-visit mechanics
+- Native app
+- Paid ads instrumentation beyond UTM capture
+
+These go to post-launch backlog so the freeze stays meaningful.
