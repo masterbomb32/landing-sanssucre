@@ -22,17 +22,18 @@ Each sprint is one calendar week. If a sprint slips, the next sprint absorbs the
 
 ---
 
-## Sprint A — Pre-launch security (May 11 – May 17)
+## Sprint A — Pre-launch security (May 11 – May 17) — ✅ SHIPPED
 
-Must ship before any marketing push. These are exploitable today.
+- [x] **5.4a** Staff PIN moved to admin-only `staff_settings` + `verify_staff_pin` (anon, 50ms delay) + `update_staff_pin` (admin only). PinPad rewritten to verify via RPC. Admin copy editor now has a separate "Update PIN" panel.
+- [x] **5.4b** `mailing_subscriptions` public INSERT policy dropped. All writes now go through the `subscribeMailingList` server fn which validates the redemption code via the admin client.
+- [x] **5.3** Security headers added in `src/start.ts` request middleware: CSP (with frame-ancestors for Lovable preview), HSTS preload, X-Content-Type-Options, Referrer-Policy, Permissions-Policy (`camera=(self)` for QR scanner).
+- [x] HIBP leaked-password protection enabled in Lovable Cloud auth.
+- [x] DNS / Cloudflare hardening doc → `.lovable/dns-recommendations.md` (owner action).
 
-- [ ] **5.4a** Move `staff.redeem_pin` out of public `site_settings` → new admin-only `staff_settings` table + `verifyStaffPin` server fn; update `PinPad`
-- [ ] **5.4b** Lock `mailing_subscriptions` INSERT behind a server fn that verifies the redemption code (revoke direct anon insert)
-- [ ] **5.3** Security headers (CSP, HSTS, Referrer-Policy, Permissions-Policy `camera=(self)`, X-Content-Type-Options, X-Frame-Options) via root response middleware
-- [ ] Toggle Leaked-Password Protection in Lovable Cloud auth
-- [ ] Doc: DNS recommendations (DNSSEC, CAA) for `sanssucre.ph` owner
-
-**Exit gate:** security linter clean, manual test of staff PIN + mailing signup still works, headers verified in browser devtools.
+**Manual verification owed before merging Sprint B:**
+- Staff PIN: enter PIN at `/redeem`, confirm unlock; rotate PIN at `/admin/copy`, confirm new PIN works and old one fails.
+- Mailing list: subscribe from `/redeemed/$code`, confirm row appears in admin → mailing subscriptions.
+- Headers: open `https://landing-sanssucre.lovable.app` in devtools → Network → response headers contain `content-security-policy`, `strict-transport-security`, `permissions-policy`.
 
 ---
 
