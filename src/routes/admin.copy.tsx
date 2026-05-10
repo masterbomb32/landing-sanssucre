@@ -98,6 +98,7 @@ function CopyEditor() {
           Changes apply immediately on the public site. Leave a field at its default to use the original wording.
         </p>
       </div>
+      <StaffPinSection />
       <div className="space-y-5 rounded-2xl border bg-card p-6">
         {FIELDS.map((f) => (
           <div key={f.key} className="space-y-1.5">
