@@ -127,3 +127,52 @@ function CopyEditor() {
     </main>
   );
 }
+
+function StaffPinSection() {
+  const [pin, setPin] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!/^\d{4,6}$/.test(pin)) {
+      toast.error("PIN must be 4–6 digits.");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.rpc("update_staff_pin", { p_pin: pin });
+    setSaving(false);
+    if (error) {
+      toast.error(error.message || "Could not update PIN.");
+      return;
+    }
+    setPin("");
+    toast.success("Staff PIN updated.");
+  };
+
+  return (
+    <div className="mb-6 space-y-3 rounded-2xl border bg-card p-6">
+      <div>
+        <h2 className="font-display text-lg font-semibold">Staff redeem PIN</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Stored in an admin-only table. Enter a new 4–6 digit PIN to rotate it. The current PIN is never displayed.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Input
+          type="password"
+          inputMode="numeric"
+          pattern="\d{4,6}"
+          maxLength={6}
+          value={pin}
+          onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))}
+          placeholder="New PIN (4–6 digits)"
+          className="font-mono tracking-widest"
+          autoComplete="new-password"
+        />
+        <Button onClick={save} disabled={saving || pin.length < 4}>
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Update PIN
+        </Button>
+      </div>
+    </div>
+  );
+}
