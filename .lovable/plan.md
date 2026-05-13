@@ -1,13 +1,26 @@
-The preview URL itself is reachable, but direct access redirects through Lovable’s auth bridge. Inside the sandbox preview, the app loads successfully through the `lovableproject.com` preview origin. The remaining “refused to connect” symptom is therefore most likely caused by iframe framing headers for the preview/auth-bridge path, not by the React app failing to render.
+## Goal
+Resolve the editor preview “refused to connect” caused by the app’s CSP `frame-ancestors` allowlist not matching the exact Lovable editor origin.
 
-Plan:
-1. Inspect all security-header configuration in the app for duplicated or conflicting CSP / `X-Frame-Options` headers.
-2. If needed, adjust the app CSP to explicitly allow the Lovable editor origins that can embed the app, while keeping the rest of the policy locked down.
-3. Restart/refresh the preview server after the header change so the latest middleware is active.
-4. Verify with browser/network tools that:
-   - the app route loads in the preview iframe,
-   - no `X-Frame-Options` header blocks embedding,
-   - `frame-ancestors` includes Lovable editor origins,
-   - the page renders normally.
+## Findings
+- The browser console shows the app frame is blocked by CSP:
+  - current policy includes `https://*.lovable.dev`
+  - the actual parent origin is `https://lovable.dev`
+- Wildcard subdomains do not match the apex domain, so `*.lovable.dev` does not allow `lovable.dev`.
+- The app header is configured in `src/start.ts`.
 
-If those checks pass but your editor still shows “refused to connect,” the fix is outside project code: the editor session is trying to frame the auth-bridge/login route instead of the app preview. In that case the practical workaround is to use the in-editor preview/sandbox URL after logging in, not the `id-preview--...lovable.app` URL directly.
+## Implementation plan
+1. Update `src/start.ts` CSP `frame-ancestors` to include both apex and wildcard Lovable editor domains:
+   - `https://lovable.dev`
+   - `https://*.lovable.dev`
+   - `https://lovable.app`
+   - `https://*.lovable.app`
+   - `https://lovableproject.com`
+   - `https://*.lovableproject.com`
+   - `https://lovable.com`
+   - `https://*.lovable.com`
+2. Keep the rest of the security policy unchanged.
+3. Verify the updated header no longer has the apex-domain gap.
+4. Ask you to refresh/retry the editor preview after the dev server picks up the change.
+
+## Technical note
+This is a small app-side fix. It will not change Lovable’s own login/auth-bridge headers, but it addresses the CSP error shown in your screenshot where the app page itself blocks embedding by `https://lovable.dev`.
