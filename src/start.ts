@@ -21,7 +21,7 @@ const securityHeaders = createMiddleware().server(async ({ next }) => {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev",
+      "frame-ancestors 'self' https://*.lovable.app https://*.lovable.dev https://*.lovableproject.com https://*.lovable.com",
     ].join("; "),
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
     "X-Content-Type-Options": "nosniff",
