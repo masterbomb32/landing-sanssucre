@@ -229,7 +229,7 @@ function RedeemStation() {
       const isPrefixTest = testMode === "prefix" && code.startsWith("TEST");
 
       // OFFLINE PATH — accept locally if the code is in the prefetched set.
-      if (!online && testMode !== "fake") {
+      if (!online) {
         const local = await findLocalCode(code);
         if (!local) {
           playBeep(false);
