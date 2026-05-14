@@ -1,13 +1,43 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Download, Check, Star, Share2, Eye, Mail } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Download,
+  Check,
+  Star,
+  Share2,
+  Eye,
+  Mail,
+  Pencil,
+  Globe,
+} from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
 import { parseUA } from "@/lib/parse-ua";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { updateSignup } from "@/server/admin.functions";
+import { getCountryBreakdown } from "@/server/dashboard.functions";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
@@ -62,6 +92,21 @@ function Dashboard() {
   const [shares, setShares] = useState<ShareEvent[]>([]);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
   const [mailing, setMailing] = useState<MailingSub[]>([]);
+  const [editing, setEditing] = useState<Signup | null>(null);
+  const [range, setRange] = useState<"today" | "7d" | "30d" | "all">("all");
+  const [countries, setCountries] = useState<{ country: string; visitors: number }[]>([]);
+  const updateSignupFn = useServerFn(updateSignup);
+  const countryFn = useServerFn(getCountryBreakdown);
+
+  const rangeBounds = useMemo(() => {
+    const now = new Date();
+    if (range === "all") return { from: null as string | null, to: null as string | null };
+    const from = new Date(now);
+    if (range === "today") from.setHours(0, 0, 0, 0);
+    else if (range === "7d") from.setDate(now.getDate() - 7);
+    else if (range === "30d") from.setDate(now.getDate() - 30);
+    return { from: from.toISOString(), to: now.toISOString() };
+  }, [range]);
 
   const load = async () => {
     const [signupsRes, visitsRes, sharesRes, feedbackRes, mailingRes] = await Promise.all([
@@ -110,6 +155,13 @@ function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
+  // Load country breakdown when range changes
+  useEffect(() => {
+    countryFn({ data: { from: rangeBounds.from, to: rangeBounds.to } })
+      .then((r) => setCountries(r.breakdown))
+      .catch(() => setCountries([]));
+  }, [countryFn, rangeBounds.from, rangeBounds.to]);
+
   const filtered = useMemo(() => {
     if (!rows) return [];
     const s = q.trim().toLowerCase();
@@ -124,15 +176,18 @@ function Dashboard() {
   }, [rows, q]);
 
   const stats = useMemo(() => {
-    const list = rows ?? [];
+    const all = rows ?? [];
+    const list = rangeBounds.from
+      ? all.filter((r) => r.created_at >= rangeBounds.from!)
+      : all;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
-    const today = list.filter((r) => new Date(r.created_at) >= todayStart).length;
+    const today = all.filter((r) => new Date(r.created_at) >= todayStart).length;
     const redeemed = list.filter((r) => !!r.redeemed_at).length;
     const byReward: Record<string, number> = {};
     for (const r of list) byReward[r.reward_choice] = (byReward[r.reward_choice] ?? 0) + 1;
     return { total: list.length, today, redeemed, byReward };
-  }, [rows]);
+  }, [rows, rangeBounds.from]);
 
   const landingStats = useMemo(() => {
     const totalVisits = visits.length;
@@ -217,6 +272,21 @@ function Dashboard() {
 
   return (
     <main className="mx-auto max-w-6xl px-5 py-8">
+      {/* Date range filter */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Range</span>
+        {(["today", "7d", "30d", "all"] as const).map((r) => (
+          <Button
+            key={r}
+            size="sm"
+            variant={range === r ? "default" : "outline"}
+            onClick={() => setRange(r)}
+          >
+            {r === "today" ? "Today" : r === "7d" ? "Last 7d" : r === "30d" ? "Last 30d" : "All time"}
+          </Button>
+        ))}
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total signups" value={stats.total} />
@@ -278,9 +348,7 @@ function Dashboard() {
           )}
           <BreakdownBars title="By OS" data={landingStats.byOS} total={landingStats.totalVisits} />
           <BreakdownBars title="By device" data={landingStats.byDevice} total={landingStats.totalVisits} />
-          <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
-            Country breakdown — coming soon
-          </div>
+          <CountryBreakdown countries={countries} />
         </div>
 
         <div className="rounded-xl border bg-card p-5">
@@ -453,7 +521,16 @@ function Dashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {r.redeemed_at ? (
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditing(r)}
+                        title="Edit signup"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      {r.redeemed_at ? (
                       <Link
                         to="/redeemed/$code"
                         params={{ code: r.redemption_code }}
@@ -467,6 +544,7 @@ function Dashboard() {
                         {busyCode === r.redemption_code ? <Loader2 className="h-3 w-3 animate-spin" /> : "Redeem"}
                       </Button>
                     )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -481,6 +559,25 @@ function Dashboard() {
           </tbody>
         </table>
       </div>
+
+      <EditSignupDialog
+        signup={editing}
+        onClose={() => setEditing(null)}
+        onSave={async (patch) => {
+          if (!editing) return;
+          try {
+            await updateSignupFn({ data: { id: editing.id, ...patch } });
+            toast.success("Signup updated.");
+            setEditing(null);
+            load();
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : "Could not update";
+            if (msg.includes("MOBILE_TAKEN")) toast.error("Mobile already in use by another signup.");
+            else if (msg.includes("NOT_ADMIN")) toast.error("Admin role required.");
+            else toast.error(msg);
+          }
+        }}
+      />
     </main>
   );
 }
@@ -530,5 +627,130 @@ function BreakdownBars({
         );
       })}
     </div>
+  );
+}
+
+function CountryBreakdown({ countries }: { countries: { country: string; visitors: number }[] }) {
+  if (countries.length === 0) {
+    return (
+      <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-2 text-[11px] text-muted-foreground">
+        <Globe className="mr-1 inline h-3 w-3" /> No country data yet
+      </div>
+    );
+  }
+  const total = countries.reduce((s, c) => s + c.visitors, 0);
+  const top = countries.slice(0, 8);
+  const otherCount = countries.slice(8).reduce((s, c) => s + c.visitors, 0);
+  const display = otherCount > 0 ? [...top, { country: "Other", visitors: otherCount }] : top;
+  return (
+    <div className="mt-3 space-y-1">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Globe className="h-3 w-3" /> By country (unique visitors)
+      </div>
+      {display.map((c) => {
+        const pct = total ? (c.visitors / total) * 100 : 0;
+        return (
+          <div key={c.country} className="flex items-center gap-2 text-xs">
+            <span className="w-16 truncate text-muted-foreground">{c.country}</span>
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+              <div className="h-full bg-primary/70" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="w-8 text-right tabular-nums">{c.visitors}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function EditSignupDialog({
+  signup,
+  onClose,
+  onSave,
+}: {
+  signup: Signup | null;
+  onClose: () => void;
+  onSave: (patch: { name?: string; mobile?: string; email?: string; reward_choice?: string }) => Promise<void>;
+}) {
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [email, setEmail] = useState("");
+  const [reward, setReward] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (signup) {
+      setName(signup.name);
+      setMobile(signup.mobile);
+      setEmail(signup.email ?? "");
+      setReward(signup.reward_choice);
+    }
+  }, [signup]);
+
+  const open = !!signup;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit signup</DialogTitle>
+          <DialogDescription>
+            Changes are recorded in the audit log. Code: <span className="font-mono">{signup?.redemption_code}</span>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3 py-2">
+          <div className="grid gap-1.5">
+            <Label htmlFor="edit-name">Name</Label>
+            <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="edit-mobile">Mobile</Label>
+            <Input id="edit-mobile" value={mobile} onChange={(e) => setMobile(e.target.value)} maxLength={20} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="edit-email">Email (optional)</Label>
+            <Input id="edit-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label>Reward</Label>
+            <Select value={reward} onValueChange={setReward}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REWARDS.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.emoji} {r.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>Cancel</Button>
+          <Button
+            disabled={saving || !signup}
+            onClick={async () => {
+              if (!signup) return;
+              const patch: { name?: string; mobile?: string; email?: string; reward_choice?: string } = {};
+              if (name !== signup.name) patch.name = name;
+              if (mobile !== signup.mobile) patch.mobile = mobile;
+              if ((email || "") !== (signup.email ?? "")) patch.email = email;
+              if (reward !== signup.reward_choice) patch.reward_choice = reward;
+              if (Object.keys(patch).length === 0) {
+                onClose();
+                return;
+              }
+              setSaving(true);
+              await onSave(patch);
+              setSaving(false);
+            }}
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

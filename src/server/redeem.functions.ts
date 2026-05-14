@@ -55,3 +55,96 @@ export const fetchFeedbackStatus = createServerFn({ method: "GET" })
       .maybeSingle();
     return { exists: true, hasFeedback: !!fb };
   });
+
+// ---- Offline support: prefetch unredeemed codes for the staff station ----
+
+const PrefetchSchema = z.object({ pin: z.string().min(4).max(6) });
+
+export const prefetchUnredeemed = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => PrefetchSchema.parse(input))
+  .handler(async ({ data }) => {
+    // Re-verify PIN server-side so unauth callers cannot enumerate codes.
+    const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", {
+      p_pin: data.pin,
+    });
+    if (pinErr || ok !== true) {
+      throw new Error("INVALID_PIN");
+    }
+    const { data: rows, error } = await supabaseAdmin
+      .from("signups")
+      .select("id,redemption_code,name,reward_choice,created_at")
+      .is("redeemed_at", null)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (error) throw new Error("Could not load codes.");
+    return {
+      codes: (rows ?? []).map((r) => ({
+        id: r.id,
+        code: r.redemption_code,
+        name: r.name,
+        reward_choice: r.reward_choice,
+        created_at: r.created_at,
+      })),
+      fetchedAt: new Date().toISOString(),
+    };
+  });
+
+const BatchSchema = z.object({
+  pin: z.string().min(4).max(6),
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(64),
+        code: z.string().trim().min(8).max(64),
+        redeemed_at: z.string().datetime().optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+export type BatchOutcome = {
+  id: string;
+  code: string;
+  status: "ok" | "already" | "invalid" | "error";
+  redeemed_at?: string;
+  message?: string;
+};
+
+export const redeemBatch = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => BatchSchema.parse(input))
+  .handler(async ({ data }): Promise<{ results: BatchOutcome[] }> => {
+    const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", {
+      p_pin: data.pin,
+    });
+    if (pinErr || ok !== true) throw new Error("INVALID_PIN");
+
+    const results: BatchOutcome[] = [];
+    for (const item of data.items) {
+      const code = item.code.toUpperCase();
+      const { data: row, error } = await supabaseAdmin.rpc("redeem_signup", {
+        p_code: code,
+      });
+      if (!error) {
+        const r = Array.isArray(row) ? row[0] : row;
+        results.push({
+          id: item.id,
+          code,
+          status: "ok",
+          redeemed_at: r?.redeemed_at ?? new Date().toISOString(),
+        });
+        continue;
+      }
+      const errAny = error as { message?: string; details?: string; hint?: string };
+      const blob = `${errAny.message ?? ""} ${errAny.details ?? ""} ${errAny.hint ?? ""}`;
+      if (blob.includes("ALREADY_REDEEMED")) {
+        const at = blob.split("ALREADY_REDEEMED:")[1]?.trim().split(/\s/)[0];
+        results.push({ id: item.id, code, status: "already", redeemed_at: at });
+      } else if (blob.includes("INVALID_CODE")) {
+        results.push({ id: item.id, code, status: "invalid" });
+      } else {
+        results.push({ id: item.id, code, status: "error", message: errAny.message });
+      }
+    }
+    return { results };
+  });

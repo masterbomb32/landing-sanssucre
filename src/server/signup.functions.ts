@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { REWARDS } from "@/lib/rewards";
 
@@ -95,12 +96,20 @@ const VisitSchema = z.object({
 export const logVisit = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => VisitSchema.parse(input))
   .handler(async ({ data }) => {
+    // Cloudflare/Lovable edge sets cf-ipcountry; fall back to common alternates.
+    const country =
+      getRequestHeader("cf-ipcountry") ||
+      getRequestHeader("x-vercel-ip-country") ||
+      getRequestHeader("x-country") ||
+      null;
     const { error } = await supabaseAdmin.from("page_visits").insert({
       visitor_hash: data.visitorId,
       path: data.path,
       referrer: data.referrer ?? null,
       user_agent: data.userAgent ?? null,
-    });
+      country: country && country.length <= 4 ? country.toUpperCase() : null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
     if (error) console.error("logVisit error", error);
     return { ok: true };
   });
