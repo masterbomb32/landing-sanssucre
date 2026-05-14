@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Loader2, Plus, Trash2, Save } from "lucide-react";
+import { Loader2, Plus, Trash2, Save, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface Faq {
@@ -76,7 +75,7 @@ function AdminFaqs() {
           question: "New question",
           answer: "New answer",
           sort_order: (faqs?.length ?? 0) * 10 + 100,
-          published: false,
+          published: true,
         },
       });
       toast.success("Created.");
@@ -148,12 +147,20 @@ function FaqEditor({
             onChange={(e) => onChange({ ...value, sort_order: parseInt(e.target.value) || 0 })}
           />
         </div>
-        <div className="flex items-center gap-2 pb-2">
-          <Switch
-            checked={value.published}
-            onCheckedChange={(c) => onChange({ ...value, published: c })}
-          />
-          <span className="text-xs text-muted-foreground">{value.published ? "Live" : "Draft"}</span>
+        <div className="pb-2">
+          <button
+            type="button"
+            onClick={() => onChange({ ...value, published: !value.published })}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              value.published
+                ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-300"
+                : "bg-amber-500/15 text-amber-700 hover:bg-amber-500/25 dark:text-amber-300"
+            }`}
+            aria-pressed={value.published}
+          >
+            {value.published ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+            {value.published ? "Published" : "Draft"}
+          </button>
         </div>
       </div>
       <div className="mt-3 space-y-1.5">
@@ -165,13 +172,18 @@ function FaqEditor({
           maxLength={2000}
         />
       </div>
-      <div className="mt-3 flex justify-end gap-2">
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          {value.published ? "Visible at /faq after saving." : "Hidden from /faq until published."}
+        </p>
+        <div className="flex gap-2">
         <Button variant="outline" size="sm" onClick={() => onDelete(value.id)}>
           <Trash2 className="h-3.5 w-3.5" /> Delete
         </Button>
         <Button size="sm" onClick={() => onSave(value)}>
           <Save className="h-3.5 w-3.5" /> Save
         </Button>
+        </div>
       </div>
     </div>
   );

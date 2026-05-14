@@ -1,60 +1,41 @@
-# Sprint C — Batch 2 Plan
+## Sprint C — Batch 2 polish
 
-Build 6 self-contained features now (no external credentials needed), then queue 4 credential-gated features for a final batch.
+Two small UX fixes from QA. Frontend-only, no schema or server changes.
 
-## Build now (in this order)
+---
 
-### 1. Conflict-resolution UI (Day 3)
-- Replace silent "already redeemed" toast on `/redeem` with a modal showing: original redeemed_at timestamp, staff who redeemed (if known), reward, customer name.
-- Actions: **Close** / **Log conflict** (writes to `redemption_audit` with `action='conflict'` + optional note).
-- Files: `src/routes/redeem.tsx`, new `src/components/ConflictModal.tsx`.
+### 1. FAQ — admin items don't appear on `/faq`
 
-### 2. QR code on receipt (part of Day 6)
-- Add `qrcode` npm package.
-- Render QR encoding the redemption code on `/receipt/$code`, sized for phone screens.
-- Print-friendly (black on white, no shadows).
-- Files: `src/routes/receipt.$code.tsx`.
+**Root cause:** When admins click **New FAQ** in `src/routes/admin.faqs.tsx`, the new row is created with `published: false` (line 79). The public `/faq` page filters on `published=true`, so nothing shows until the admin manually toggles the **Live** switch and saves again. This was easy to miss — the toggle is small and the default contradicts the table default (`published=true`).
 
-### 3. Referral tracking (Day 7)
-- Read `?ref={code}` on landing → store in sessionStorage.
-- On signup success, if ref present and resolves to a valid signup, insert into `referrals` (referrer_signup_id, referred_signup_id) via a new server fn `recordReferral`.
-- Show "Share your link" card on `/thanks` with `?ref={their_code}` deep link + native share.
-- Admin: "Top referrers" card on `/admin` (count of `referrals` grouped by referrer).
-- Files: new `src/server/referrals.functions.ts`, edit `src/routes/index.tsx`, `src/routes/thanks.tsx`, `src/routes/admin.index.tsx`.
+**Fix (in `src/routes/admin.faqs.tsx`):**
+- Change `onCreate` to insert with `published: true` so new entries are immediately visible.
+- Make the Live/Draft state more prominent: replace the small switch with a labeled badge-style toggle (e.g. green "Published" / amber "Draft" pill next to the Save button), so admins clearly see whether an entry is visible to the public.
+- After **Save**, refresh and keep the editor open (already does); also surface a subtle "Visible at /faq" hint when published.
 
-### 4. Privacy + FAQ (Day 8)
-- New route `src/routes/privacy.tsx` — content from `site_settings.privacy_html` (editable in `/admin/copy`), PH-DPA-aligned default copy seeded.
-- New route `src/routes/faq.tsx` — accordion fed by `faqs` table (already exists, seeded).
-- Inject `FAQPage` JSON-LD on `/faq`.
-- Footer links to `/privacy` and `/faq`.
-- Admin: new `/admin/faqs` to add/edit/reorder/publish FAQs (uses `upsertFaq`, `deleteFaq` server fns).
-- Files: `src/routes/privacy.tsx`, `src/routes/faq.tsx`, `src/routes/admin.faqs.tsx`, new `src/server/faqs.functions.ts`, edit footer + `/admin/copy`.
+No data migration needed — existing draft FAQs stay drafts; the admin can flip them on.
 
-### 5. Testimonials (Day 9)
-- Landing section: rotating quotes from `testimonials` where `published=true`, plus a static press-logo strip (4 placeholder SVGs).
-- New route `/share-your-story` — public form (name, quote, optional photo upload to `testimonial-photos` bucket). Inserts as `published=false`.
-- Admin moderation at `/admin/testimonials`: list pending → publish/delete/reorder.
-- Files: new `src/components/TestimonialsSection.tsx`, `src/routes/share-your-story.tsx`, `src/routes/admin.testimonials.tsx`, new `src/server/testimonials.functions.ts`.
+---
 
-### 6. Scroll-reveal sticky CTA (part of Day 10)
-- Mobile-only fixed bottom CTA "Claim your reward" → scrolls to signup form on `/`.
-- Appears after scrolling past hero (~400px), hides on `/receipt`, `/redeem`, `/admin/*`, `/thanks`.
-- Smooth fade in/out via framer-motion.
-- Files: new `src/components/StickyCTA.tsx`, mounted in `__root.tsx` with route check.
+### 2. Testimonials — unclear what the photo should be
 
-## Then (credentials-gated — separate batch)
+**Root cause:** The "Photo (optional, max 5MB)" field on `/share-your-story` doesn't tell the user *what* to upload — selfie, group photo, or a shot of their treat? Submissions will be inconsistent and harder to moderate.
 
-After this batch is approved & built, I'll proceed with the final 4:
-- **Push notifications** — needs VAPID keys (I'll generate, then `add_secret` for `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT`).
-- **Email confirmation** — needs Lovable Emails domain setup dialog.
-- **SMS via Twilio** — needs Twilio connector via `standard_connectors--connect`.
-- **Google Maps** — needs `GOOGLE_MAPS_API_KEY` secret (Maps Embed API enabled).
-- **QA & v1.3 publish** — Lighthouse pass, smoke test, publish.
+**Fix (in `src/routes/share-your-story.tsx`):**
+- Rename the field to **"Add a photo of yourself or your Sans Sucre treat"**.
+- Add a one-line helper under the field: *"A clear photo of you, or of the item you ordered. Square or portrait works best."*
+- Add a small thumbnail preview after a file is selected so the user can confirm the right photo was picked.
+- Keep the 5MB cap and the "optional" label.
 
-## Technical notes
-- All new server fns use `requireSupabaseAuth` + admin check where appropriate (testimonial moderation, FAQ edit, referrer report). Public submission fns (`recordReferral`, public testimonial insert) use anon RLS already in place.
-- All new routes get unique `head()` metadata for SEO.
-- No schema changes needed — Day 1 migrations already created `referrals`, `testimonials`, `faqs`, `testimonial-photos` bucket.
-- Dependencies to add: `qrcode` + `@types/qrcode`.
+No change to the storage bucket, RLS, or the `testimonials` table.
 
-Approve to start building.
+---
+
+### Files touched
+
+- `src/routes/admin.faqs.tsx` — default `published: true` on create + clearer Live/Draft indicator
+- `src/routes/share-your-story.tsx` — clearer photo label, helper text, thumbnail preview
+
+### Out of scope (already queued for Batch 3)
+
+Push notifications, Email confirmation, SMS via Twilio, Google Maps, QA pass + v1.3 publish.
