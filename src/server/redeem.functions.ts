@@ -17,10 +17,10 @@ export const submitFeedback = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.rpc("submit_testimonial_for_code", {
       p_code: data.code,
       p_rating: data.rating,
-      p_comment: data.comment ?? null,
+      p_comment: data.comment ?? "",
       p_share_publicly: data.share_publicly ?? false,
-      p_photo_url: data.photo_url ?? null,
-      p_source: data.source ?? null,
+      p_photo_url: data.photo_url ?? "",
+      p_source: data.source ?? "",
     });
     if (error) {
       const msg = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`;
