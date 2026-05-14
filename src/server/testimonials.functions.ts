@@ -19,6 +19,7 @@ const ModerateSchema = z.object({
   id: z.string().uuid(),
   published: z.boolean().optional(),
   sort_order: z.number().int().min(0).max(100000).optional(),
+  comment_only: z.boolean().optional(),
 });
 
 export const moderateTestimonial = createServerFn({ method: "POST" })
@@ -29,6 +30,7 @@ export const moderateTestimonial = createServerFn({ method: "POST" })
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (data.published !== undefined) patch.published = data.published;
     if (data.sort_order !== undefined) patch.sort_order = data.sort_order;
+    if (data.comment_only !== undefined) patch.comment_only = data.comment_only;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await supabaseAdmin.from("testimonials").update(patch as any).eq("id", data.id);
     if (error) throw new Error("Could not update testimonial.");
