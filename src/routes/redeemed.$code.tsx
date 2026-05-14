@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { fetchReceipt } from "@/server/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
 import { subscribeMailingList } from "@/server/mailing.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { getReward } from "@/lib/rewards";
 import { useSiteCopy } from "@/hooks/use-site-copy";
 import { toast } from "sonner";
