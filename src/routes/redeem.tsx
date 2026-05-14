@@ -1,15 +1,25 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Scanner, playBeep } from "@/components/scanner";
 import { PinPad } from "@/components/pin-pad";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Check, AlertTriangle, X, Lock, Loader2, Undo2, FlaskConical } from "lucide-react";
+import { Check, AlertTriangle, X, Lock, Loader2, Undo2, FlaskConical, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { getReward } from "@/lib/rewards";
 import { formatDateTime, manilaStartOfTodayISO } from "@/lib/format-date";
 import { toast } from "sonner";
 import logo from "@/assets/sanssucre-logo.png";
+import {
+  findLocalCode,
+  isLocallyRedeemed,
+  markLocallyRedeemed,
+  saveUnredeemed,
+  getCacheFetchedAt,
+} from "@/lib/redeem-cache";
+import { enqueue, listOutbox, outboxSize, replaceOutbox } from "@/lib/redeem-outbox";
+import { prefetchUnredeemed, redeemBatch } from "@/server/redeem.functions";
 
 export const Route = createFileRoute("/redeem")({
   head: () => ({
@@ -22,6 +32,7 @@ export const Route = createFileRoute("/redeem")({
 });
 
 const SESSION_KEY = "sanssucre_redeem_unlocked";
+const PIN_CACHE_KEY = "sanssucre_redeem_pin_cache";
 const HOLD_SETTING_KEY = "staff.redeem_hold_seconds";
 const TEST_MODE_KEY = "staff.test_mode"; // values: "off" | "fake" | "prefix"
 const UNDO_WINDOW_SECONDS = 30;
@@ -49,6 +60,14 @@ function RedeemStation() {
   const [paused, setPaused] = useState(false);
   const [undoSecondsLeft, setUndoSecondsLeft] = useState<number | null>(null);
   const [undoing, setUndoing] = useState(false);
+  const [online, setOnline] = useState<boolean>(
+    typeof navigator === "undefined" ? true : navigator.onLine,
+  );
+  const [queueCount, setQueueCount] = useState<number>(0);
+  const [syncing, setSyncing] = useState(false);
+  const [cacheAt, setCacheAt] = useState<number | null>(null);
+  const prefetchFn = useServerFn(prefetchUnredeemed);
+  const batchFn = useServerFn(redeemBatch);
 
   // Load PIN from settings + check session
   useEffect(() => {
@@ -75,6 +94,82 @@ function RedeemStation() {
       setLoadingPin(false);
     })();
   }, []);
+
+  // Online/offline tracking
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
+  // Refresh queue count + cache age periodically
+  useEffect(() => {
+    if (!unlocked) return;
+    let stop = false;
+    const tick = async () => {
+      const [n, at] = await Promise.all([outboxSize(), getCacheFetchedAt()]);
+      if (!stop) {
+        setQueueCount(n);
+        setCacheAt(at);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [unlocked]);
+
+  // Drain outbox whenever we are online and have queued items
+  const drainOutbox = useCallback(async () => {
+    if (syncing) return;
+    const items = await listOutbox();
+    if (items.length === 0) return;
+    const pin = sessionStorage.getItem(PIN_CACHE_KEY);
+    if (!pin) return; // can't sync without the staff PIN this session
+    setSyncing(true);
+    try {
+      const { results } = await batchFn({
+        data: {
+          pin,
+          items: items.map((i) => ({ id: i.id, code: i.code, redeemed_at: i.redeemed_at })),
+        },
+      });
+      const conflicts = results.filter((r) => r.status === "already").length;
+      const invalids = results.filter((r) => r.status === "invalid").length;
+      const errored = results.filter((r) => r.status === "error");
+      // Keep only items that errored transiently for retry; drop ok/already/invalid.
+      const erroredIds = new Set(errored.map((e) => e.id));
+      const remaining = items.filter((i) => erroredIds.has(i.id));
+      await replaceOutbox(remaining);
+      setQueueCount(remaining.length);
+      if (conflicts > 0) {
+        toast.warning(`${conflicts} queued scan(s) were already redeemed elsewhere.`);
+      }
+      if (invalids > 0) {
+        toast.error(`${invalids} queued scan(s) had invalid codes — discarded.`);
+      }
+      if (remaining.length === 0 && results.some((r) => r.status === "ok")) {
+        toast.success("Queued redemptions synced.");
+      }
+    } catch (e) {
+      console.error("Sync failed", e);
+    } finally {
+      setSyncing(false);
+    }
+  }, [batchFn, syncing]);
+
+  useEffect(() => {
+    if (online && unlocked && queueCount > 0) {
+      drainOutbox();
+    }
+  }, [online, unlocked, queueCount, drainOutbox]);
 
   // Today's count
   const loadCount = useCallback(async () => {
@@ -133,6 +228,48 @@ function RedeemStation() {
       // TEST MODE — "prefix": only act on codes starting with TEST; real DB write but tagged in audit
       const isPrefixTest = testMode === "prefix" && code.startsWith("TEST");
 
+      // OFFLINE PATH — accept locally if the code is in the prefetched set.
+      if (!online && testMode !== "fake") {
+        const local = await findLocalCode(code);
+        if (!local) {
+          playBeep(false);
+          setResult({
+            kind: "error",
+            message: "Offline and code not in local cache. Cannot verify.",
+          });
+          setTimeout(() => {
+            setResult(null);
+            setScanning(true);
+          }, 2500);
+          return;
+        }
+        if (await isLocallyRedeemed(code)) {
+          playBeep(false);
+          setResult({ kind: "already", redeemedAt: "", code });
+          return;
+        }
+        await markLocallyRedeemed(code);
+        await enqueue(code);
+        setQueueCount(await outboxSize());
+        const reward = getReward(local.reward_choice);
+        playBeep(true);
+        setScanning(false);
+        setResult({
+          kind: "success",
+          name: local.name,
+          reward: reward?.title ?? local.reward_choice,
+          rewardEmoji: reward?.emoji ?? "🎁",
+          code,
+          createdAt: local.created_at,
+          isTest: false,
+        });
+        setManualCode("");
+        setPaused(false);
+        setCountdown(holdSeconds > 0 ? holdSeconds : null);
+        setUndoSecondsLeft(null);
+        return;
+      }
+
       setBusy(true);
       setScanning(false);
       const { data, error } = await supabase.rpc("redeem_signup", { p_code: code });
@@ -190,7 +327,7 @@ function RedeemStation() {
       // Arm the undo window
       setUndoSecondsLeft(UNDO_WINDOW_SECONDS);
     },
-    [busy, loadCount, holdSeconds, testMode],
+    [busy, loadCount, holdSeconds, testMode, online],
   );
 
   // Countdown ticker for the success card
@@ -265,6 +402,7 @@ function RedeemStation() {
 
   const lock = () => {
     sessionStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(PIN_CACHE_KEY);
     setUnlocked(false);
     setResult(null);
   };
@@ -286,7 +424,19 @@ function RedeemStation() {
           onVerify={async (entered) => {
             const { data, error } = await supabase.rpc("verify_staff_pin", { p_pin: entered });
             if (error) return false;
-            return data === true;
+            if (data === true) {
+              // Cache PIN in sessionStorage for offline cache prefetch + outbox sync.
+              sessionStorage.setItem(PIN_CACHE_KEY, entered);
+              // Fire-and-forget prefetch of unredeemed codes for offline use.
+              prefetchFn({ data: { pin: entered } })
+                .then(async (res) => {
+                  await saveUnredeemed(res.codes);
+                  setCacheAt(Date.now());
+                })
+                .catch(() => undefined);
+              return true;
+            }
+            return false;
           }}
           onUnlock={() => {
             sessionStorage.setItem(SESSION_KEY, "1");
@@ -320,6 +470,13 @@ function RedeemStation() {
             </span>
           </div>
           <div className="flex items-center gap-3">
+            <SyncPill
+              online={online}
+              queueCount={queueCount}
+              syncing={syncing}
+              onSync={drainOutbox}
+              cacheAt={cacheAt}
+            />
             <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium tabular-nums">
               Today: {todayCount ?? "—"}
             </span>
