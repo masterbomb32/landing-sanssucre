@@ -566,6 +566,7 @@ function ResultCard({
   undoSecondsLeft,
   onUndo,
   undoing,
+  onLogConflict,
 }: {
   result: Result;
   onContinue: () => void;
@@ -575,6 +576,7 @@ function ResultCard({
   undoSecondsLeft?: number | null;
   onUndo?: () => void;
   undoing?: boolean;
+  onLogConflict?: (note: string) => void | Promise<void>;
 }) {
   if (result.kind === "success") {
     return (
@@ -661,6 +663,20 @@ function ResultCard({
         <Button className="mt-5" onClick={onContinue}>
           Continue
         </Button>
+        {onLogConflict && (
+          <div className="mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const note = window.prompt("Describe the conflict (optional):") ?? "";
+                void onLogConflict(note);
+              }}
+            >
+              Log conflict
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
