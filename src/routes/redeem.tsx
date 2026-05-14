@@ -671,3 +671,54 @@ function ResultCard({
     </div>
   );
 }
+
+function SyncPill({
+  online,
+  queueCount,
+  syncing,
+  onSync,
+  cacheAt,
+}: {
+  online: boolean;
+  queueCount: number;
+  syncing: boolean;
+  onSync: () => void;
+  cacheAt: number | null;
+}) {
+  const stale = cacheAt && Date.now() - cacheAt > 10 * 60 * 1000;
+  let tone = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
+  let Icon = Wifi;
+  let label = "Online";
+  if (!online) {
+    tone = "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200";
+    Icon = WifiOff;
+    label = queueCount > 0 ? `Offline · ${queueCount} queued` : "Offline";
+  } else if (queueCount > 0) {
+    tone = "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200";
+    label = syncing ? "Syncing…" : `${queueCount} queued`;
+  } else if (stale) {
+    tone = "bg-secondary text-foreground";
+    label = "Cache stale";
+  }
+  return (
+    <button
+      type="button"
+      onClick={online && queueCount > 0 && !syncing ? onSync : undefined}
+      title={
+        cacheAt
+          ? `Code cache updated ${new Date(cacheAt).toLocaleTimeString()}`
+          : "Code cache not loaded yet"
+      }
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${tone} ${
+        online && queueCount > 0 ? "hover:brightness-95" : "cursor-default"
+      }`}
+    >
+      {syncing ? (
+        <RefreshCw className="h-3 w-3 animate-spin" />
+      ) : (
+        <Icon className="h-3 w-3" />
+      )}
+      <span>{label}</span>
+    </button>
+  );
+}
