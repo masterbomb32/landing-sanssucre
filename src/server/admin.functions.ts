@@ -58,7 +58,7 @@ export const updateSignup = createServerFn({ method: "POST" })
       .single();
     if (loadErr || !before) throw new Error("NOT_FOUND");
 
-    const patch: Record<string, string | null> = {};
+    const patch: { name?: string; mobile?: string; email?: string | null; reward_choice?: string } = {};
     if (data.name !== undefined) patch.name = data.name;
     if (data.mobile !== undefined) patch.mobile = normalizeMobile(data.mobile);
     if (data.email !== undefined) patch.email = data.email ?? null;
@@ -87,12 +87,16 @@ export const updateSignup = createServerFn({ method: "POST" })
       .single();
     if (upErr || !after) throw new Error("Could not update signup.");
 
-    await supabaseAdmin.from("signup_edits").insert({
-      signup_id: data.id,
-      edited_by: userId,
-      before: before as unknown as Record<string, unknown>,
-      after: after as unknown as Record<string, unknown>,
-    });
+    await supabaseAdmin
+      .from("signup_edits")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert({
+        signup_id: data.id,
+        edited_by: userId,
+        before: before as unknown as Record<string, unknown>,
+        after: after as unknown as Record<string, unknown>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any);
 
     return { ok: true, signup: after, unchanged: false };
   });
