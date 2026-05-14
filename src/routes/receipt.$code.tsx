@@ -1,12 +1,11 @@
 import { createFileRoute, Link, notFound, useRouter, redirect } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
-import { Check, MapPin, Info, Search } from "lucide-react";
+import { Check, MapPin, Info } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
 import { Countdown } from "@/components/countdown";
 import { fetchReceipt } from "@/server/receipt.functions";
-import { getReservationCount } from "@/server/stats.functions";
 import { getReward } from "@/lib/rewards";
 import { siteCopy } from "@/lib/site-copy";
 import { useSiteCopy } from "@/hooks/use-site-copy";
@@ -64,22 +63,6 @@ function ReceiptPage() {
   const reward = getReward(data.reward_choice);
   const isRedeemed = !!data.redeemed_at;
   const [justRedeemed, setJustRedeemed] = useState(false);
-  const [reservedCount, setReservedCount] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCount = async () => {
-      try {
-        const r = await getReservationCount();
-        if (!cancelled) setReservedCount(r.total);
-      } catch {
-        /* ignore */
-      }
-    };
-    fetchCount();
-    const id = setInterval(fetchCount, 10000);
-    return () => { cancelled = true; clearInterval(id); };
-  }, []);
 
   // Keep screen awake + nudge user to brighten the display so the QR scans faster.
   useEffect(() => {
@@ -223,136 +206,109 @@ function ReceiptPage() {
             </div>
           )}
 
-          {/* Body — single column on mobile/tablet, two columns on desktop */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_1fr]">
-            {/* LEFT column */}
-            <div className="flex flex-col gap-3 px-5 py-5 sm:px-7 lg:border-r lg:border-primary/10">
-              {/* Greeting */}
-              <div className="text-center">
-                <p className="font-display text-[10px] uppercase tracking-[0.28em] text-primary">
-                  Hello, {data.name.split(" ")[0]}
-                </p>
-                <h1 className="mt-1 font-display text-xl font-bold leading-tight sm:text-2xl">
-                  Your treat is waiting.
-                </h1>
-              </div>
-
-              {/* Reward block */}
-              {reward && (
-                <div className="rounded-xl bg-secondary/40 px-4 py-3 text-center">
-                  <div className="flex items-center justify-center gap-2">
-                    <span className="text-2xl leading-none" aria-hidden>{reward.emoji}</span>
-                    <span className="font-display text-base font-semibold">{reward.title}</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">
-                    {reward.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Opening day notice */}
-              <div className="flex items-start gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
-                <Info className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                <p className="text-left text-[11px] leading-snug text-foreground/80">
-                  {copy.receipt.openingNotice}
-                </p>
-              </div>
-
-              {/* Compact location strip */}
-              <div className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5 text-[11.5px] leading-snug">
-                <MapPin className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" />
-                <div>
-                  <span className="font-semibold">Sans Sucre</span>
-                  <span className="text-muted-foreground"> — Inside Metro Supermarket, Alabang Town Center</span>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <ShareButton
-                  className="h-10 flex-1"
-                  text={`I just reserved a treat at ${siteCopy.brand.name}'s opening! Get yours:`}
-                />
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (typeof window !== "undefined") window.print();
-                  }}
-                  className="flex h-10 flex-1 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-                >
-                  Save / Print
-                </a>
-              </div>
-
-              {/* Lost-this-page CTA */}
-              <Link
-                to="/find"
-                className="flex h-10 items-center justify-center gap-1.5 rounded-md border border-dashed border-primary/40 bg-primary/5 text-[12px] font-medium text-primary hover:bg-primary/10"
-              >
-                <Search className="h-3.5 w-3.5" />
-                {copy.receipt.findMyRewardCta}
-              </Link>
-
-              <p className="text-center text-[10px] text-muted-foreground">
-                One reward per person. ·{" "}
-                <Link to="/" className="hover:text-foreground">sanssucre.ph</Link>
+          {/* Body — single vertical column */}
+          <div className="flex flex-col gap-3 px-5 py-5 sm:px-7">
+            {/* 1 + 2: Greeting + headline */}
+            <div className="text-center">
+              <p className="font-display text-[10px] uppercase tracking-[0.28em] text-primary">
+                Hello, {data.name.split(" ")[0]}
               </p>
+              <h1 className="mt-1 font-display text-xl font-bold leading-tight sm:text-2xl">
+                Your treat is waiting.
+              </h1>
             </div>
 
-            {/* RIGHT column */}
-            <div className="flex flex-col gap-4 border-t border-primary/10 bg-primary/[0.03] px-5 py-5 sm:px-6 lg:border-t-0">
-              {/* Opening countdown */}
-              <div className="text-center">
-                <p className="font-display text-[10px] uppercase tracking-[0.32em] text-primary">
-                  Opening on
+            {/* 3: Treat card */}
+            {reward && (
+              <div className="rounded-xl bg-secondary/40 px-4 py-3 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl leading-none" aria-hidden>{reward.emoji}</span>
+                  <span className="font-display text-base font-semibold">{reward.title}</span>
+                </div>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {reward.description}
                 </p>
-                <p className="mt-1 font-display text-base font-semibold">
-                  {copy.opening.label}
-                </p>
-                <Countdown targetISO={copy.opening.date} className="mt-2" />
               </div>
+            )}
 
-              {/* QR code */}
-              <div className="flex flex-col items-center rounded-xl border bg-muted/30 px-3 py-3 text-center">
-                <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-                  Scan at the counter
-                </div>
-                <div className="mt-2.5 rounded-lg bg-white p-2.5 shadow-sm">
-                  <div className="h-[180px] w-[180px] sm:h-[200px] sm:w-[200px]">
-                    <QRCodeSVG
-                      value={code}
-                      size={200}
-                      level="H"
-                      includeMargin={false}
-                      bgColor="#ffffff"
-                      fgColor="#000000"
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  </div>
-                </div>
-                <div className="mt-2.5 font-mono text-sm font-semibold tracking-[0.28em]">{code}</div>
-                <div className="mt-1.5 inline-flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  </span>
-                  Waiting for staff to scan…
-                </div>
+            {/* 4: Instructions card (opening notice + one reward per person) */}
+            <div className="flex items-start gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5">
+              <Info className="mt-0.5 h-4 w-4 flex-none text-primary" />
+              <div className="text-left text-[11px] leading-snug text-foreground/80">
+                <p>{copy.receipt.openingNotice}</p>
+                <p className="mt-1.5 font-medium text-foreground/90">One reward per person.</p>
               </div>
-
-              {/* Live community count */}
-              {reservedCount !== null && reservedCount > 0 && (
-                <div className="inline-flex items-center justify-center gap-1.5 self-center rounded-full bg-secondary/60 px-3 py-1.5 text-[11px] text-foreground/70">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75" />
-                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                  </span>
-                  <span className="tabular-nums font-semibold">{reservedCount.toLocaleString()}</span>
-                  <span>{copy.receipt.communityCount}</span>
-                </div>
-              )}
             </div>
+
+            {/* 5: QR code card */}
+            <div className="flex flex-col items-center rounded-xl border bg-muted/30 px-3 py-3 text-center">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+                Scan at the counter
+              </div>
+              <div className="mt-2.5 rounded-lg bg-white p-2.5 shadow-sm">
+                <div className="h-[180px] w-[180px] sm:h-[200px] sm:w-[200px]">
+                  <QRCodeSVG
+                    value={code}
+                    size={200}
+                    level="H"
+                    includeMargin={false}
+                    bgColor="#ffffff"
+                    fgColor="#000000"
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </div>
+              </div>
+              <div className="mt-2.5 font-mono text-sm font-semibold tracking-[0.28em]">{code}</div>
+              <div className="mt-1.5 inline-flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                </span>
+                Waiting for staff to scan…
+              </div>
+            </div>
+
+            {/* 6: Share */}
+            <ShareButton
+              className="h-10 w-full"
+              text={`I just reserved a treat at ${siteCopy.brand.name}'s opening! Get yours:`}
+            />
+
+            {/* 7: Save / Print */}
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                if (typeof window !== "undefined") window.print();
+              }}
+              className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+            >
+              Save / Print
+            </a>
+
+            {/* 10: Location card */}
+            <div className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5 text-[11.5px] leading-snug">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 flex-none text-primary" />
+              <div>
+                <span className="font-semibold">Sans Sucre</span>
+                <span className="text-muted-foreground"> — Inside Metro Supermarket, Alabang Town Center</span>
+              </div>
+            </div>
+
+            {/* 11: Countdown card (last) */}
+            <div className="rounded-xl border border-primary/10 bg-primary/[0.03] px-4 py-3 text-center">
+              <p className="font-display text-[10px] uppercase tracking-[0.32em] text-primary">
+                Opening on
+              </p>
+              <p className="mt-1 font-display text-base font-semibold">
+                {copy.opening.label}
+              </p>
+              <Countdown targetISO={copy.opening.date} className="mt-2" />
+            </div>
+
+            <p className="text-center text-[10px] text-muted-foreground">
+              <Link to="/" className="hover:text-foreground">sanssucre.ph</Link>
+            </p>
           </div>
         </div>
       </div>
