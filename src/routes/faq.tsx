@@ -42,7 +42,7 @@ export const Route = createFileRoute("/faq")({
 });
 
 function FaqPage() {
-  const { faqs } = Route.useLoaderData();
+  const { faqs } = Route.useLoaderData() as { faqs: Faq[] };
 
   // FAQPage JSON-LD for SEO
   const jsonLd = {
