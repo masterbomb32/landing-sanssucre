@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          id: string
+          published: boolean
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          id?: string
+          published?: boolean
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           comment: string | null
@@ -168,6 +198,42 @@ export type Database = {
         }
         Relationships: []
       }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          referred_signup_id: string
+          referrer_signup_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referred_signup_id: string
+          referrer_signup_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referred_signup_id?: string
+          referrer_signup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_signup_id_fkey"
+            columns: ["referred_signup_id"]
+            isOneToOne: true
+            referencedRelation: "signups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_signup_id_fkey"
+            columns: ["referrer_signup_id"]
+            isOneToOne: false
+            referencedRelation: "signups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       share_events: {
         Row: {
           channel: string
@@ -238,6 +304,9 @@ export type Database = {
           redeemed_at: string | null
           redemption_code: string
           reward_choice: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
         }
         Insert: {
           created_at?: string
@@ -249,6 +318,9 @@ export type Database = {
           redeemed_at?: string | null
           redemption_code: string
           reward_choice: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Update: {
           created_at?: string
@@ -260,6 +332,9 @@ export type Database = {
           redeemed_at?: string | null
           redemption_code?: string
           reward_choice?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
         }
         Relationships: []
       }
@@ -284,6 +359,39 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          last_seen_at: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          last_seen_at?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          last_seen_at?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_settings: {
         Row: {
           key: string
@@ -302,6 +410,42 @@ export type Database = {
           updated_at?: string
           updated_by?: string | null
           value?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          photo_url: string | null
+          published: boolean
+          quote: string
+          sort_order: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          photo_url?: string | null
+          published?: boolean
+          quote: string
+          sort_order?: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          photo_url?: string | null
+          published?: boolean
+          quote?: string
+          sort_order?: number
+          source?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
