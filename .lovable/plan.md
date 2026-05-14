@@ -1,68 +1,82 @@
-## Sprint B — Phase 1 staff ops (May 18–24)
+## Sprint C — Opening-week polish & growth (May 25 – Jun 7)
 
-Goal: make opening-day operations resilient (basement WiFi) and give you the admin tooling to fix data on the fly. Three deliverables, ordered by launch risk.
-
----
-
-### 1. Offline `/redeem` (highest launch risk first)
-
-The shop's WiFi can drop. Staff must still be able to scan and hand over rewards, with redemptions reconciled when the connection comes back.
-
-- **Service worker** (`public/sw.js` + Vite registration in `src/start.ts` client entry):
-  - Precache the `/redeem` route shell, JS/CSS chunks, logo, beep sound.
-  - Network-first for `/redeem`, cache-first for static assets.
-  - Skip caching for Supabase API calls — those go through the queue below.
-- **Local redemption cache** (IndexedDB via a small `idb-keyval` helper, no new heavy deps):
-  - On unlock, prefetch a slim list of valid unredeemed codes (id, code, name, reward_choice, created_at) into IDB. Refresh every 60s while online.
-  - Scanner first checks IDB. If the code matches an unredeemed local row → show success card immediately, mark it locally redeemed, enqueue an "intent" `{code, redeemed_at, staff_session, client_id}` into an outbox.
-  - If not found locally and offline → show an "Offline — accepted, will sync" badge but still hand over (configurable safety: only allow if code passes a checksum / matches the prefetched set; otherwise show "Cannot verify offline").
-- **Outbox sync**:
-  - Background sync via `navigator.onLine` + `online` event + 10s polling fallback.
-  - New server fn `redeemBatch({ items })` that loops `redeem_signup` per item, returning per-item `{ ok | already | invalid }`. Reuses existing RPC, so no SQL change.
-  - On conflict (already redeemed by someone else): toast "Code already used at HH:mm by another staff" — staff will already have handed over the reward; this is acknowledged as the trade-off of offline mode.
-- **UI affordances**:
-  - Header pill flips green ("Online · synced") / amber ("Offline · 3 queued") / red ("Sync error").
-  - Manual "Sync now" button.
-  - Lock screen warns if the local code cache is older than 10 minutes.
-
-### 2. Admin: manual edit signup
-
-Today the only way to fix a typo or wrong reward choice is the database. Add an inline edit row in `/admin` (the existing signups table).
-
-- New server fn `updateSignup({ id, name?, mobile?, email?, reward_choice? })` with admin-role middleware (re-use the `has_role` check pattern; add `requireAdmin` middleware that builds on `requireSupabaseAuth`).
-- Validation: same Zod rules as `createSignup` (PH mobile, valid reward id).
-- Signups row gets an "Edit" pencil → opens a dialog with the four fields, "Save" calls the fn, optimistically updates the table, audit log row inserted.
-- New `signup_edits` audit table: `id, signup_id, edited_by, before jsonb, after jsonb, created_at`. Migration adds the table + RLS (admin select only).
-- Soft "delete" is out of scope; staff will continue to ignore mis-scans.
-
-### 3. Dashboard: date filter + country breakdown
-
-`/admin` currently shows lifetime totals. Add:
-
-- **Date range filter** (Today / 7d / 30d / All / custom range picker — uses the existing `Calendar` component). Filter applies to: signups count, redemptions count, conversion %, top rewards.
-- **Country breakdown card**: derive from `page_visits.country` (already populated by `logVisit` via Cloudflare headers — confirm during build; if not, add `request.cf.country` capture in `logVisit`). Top 8 countries + "Other", as a compact horizontal bar list.
-- All aggregations move to a single `getDashboardStats({ from, to })` server fn so the UI does one round-trip per filter change.
+Goal: close the remaining ops gaps from Sprint B, add the trust/SEO content the landing page is missing, and ship two growth loops (referral + email confirmation). Roadmap-only items from `Feature_Summary.md` are deferred to Sprint D+.
 
 ---
 
-### Order of work
+### Scope (13 features, grouped by theme)
 
-1. **Day 1–2:** Offline `/redeem` (service worker + IDB cache + outbox + UI). Test by toggling Network panel offline mid-scan.
-2. **Day 3:** Admin manual edit signup + audit table.
-3. **Day 4:** Dashboard date filter + country breakdown.
-4. **Day 5:** Buffer + manual QA on a real phone in airplane mode + Publish.
+#### A. Admin & Ops (4)
+1. **CSV Export** — `/admin` toolbar button. Server fn `exportSignups({ from, to })` streams CSV (name, mobile, email, reward, code, created_at, redeemed_at). Respects current date filter. Admin-only.
+2. **Conflict-resolution UI** — replace the silent "already redeemed" toast on `/redeem` with a dialog showing who/when redeemed, plus a "Mark as my redemption" override that writes a `redemption_audit` note. Drains from the offline outbox into a "Needs review" tray instead of disappearing.
+3. **Push Notifications** — Web Push for staff `/redeem` device. Notify on (a) new signup while station is open, (b) sync conflict needing review. VAPID keys stored as secrets; SW already exists, extend with `push` + `notificationclick` handlers. Subscription stored in new `staff_push_subscriptions` table.
+4. **Soft-delete / void signup** — admin row action "Void". Adds `voided_at`, `voided_by`, `void_reason` to `signups`. Voided rows excluded from KPIs and from the offline redemption cache. Audited in `signup_edits`.
 
-### Out of scope (defer to Sprint C or later)
+#### B. Customer comms (3)
+5. **Email/SMS confirmation on signup** — fire-and-forget from `createSignup`. Email via Lovable Emails (queue-based); SMS via Twilio connector when mobile is PH and SMS is enabled in `site_settings`. Templates editable in `/admin/copy`. Logged to existing `notification_log`.
+6. **QR code on receipt page** — render the redemption code as QR (via `qrcode` lib, client-side SVG). Scanner already accepts the same string, so no `/redeem` change needed. Print-friendly layout.
+7. **Referral tracking** — receipt page gets a "Share & earn" block with a unique `?ref={code}` link. New `referrals` table (`referrer_signup_id`, `referred_signup_id`, `created_at`). On signup, if `?ref=` cookie present, link them. Admin dashboard adds a "Top referrers" card.
 
-- Push notifications, conflict-resolution UI beyond a toast, multi-device sync of staff sessions, exporting signups to CSV from the dashboard.
+#### C. Landing page trust & SEO (5)
+8. **Privacy Page** — replace the current stub at `/privacy` with a real PH-DPA-aligned policy (data collected, retention, contact). Editable copy block in `/admin/copy`.
+9. **Customer testimonials & press logos** — new section on `/` between hero and signup. Pulls from new `testimonials` table (name, quote, photo_url, source, published). Press logos as static SVG strip.
+10. **Testimonials submission page/form** — `/share-your-story` route. Collects name, quote, optional photo (Supabase Storage bucket `testimonials`). Inserts as `published=false`; admin moderates in `/admin/testimonials`.
+11. **FAQ section** — collapsible accordion on `/` + standalone `/faq` route with JSON-LD `FAQPage` schema. New `faqs` table (`question`, `answer`, `sort_order`, `published`). Seeded with 8 starter Q&As; full CRUD in `/admin/faqs`.
+12. **Scroll-reveal sticky CTA** — mobile-only sticky bottom bar ("Reserve your reward") that fades in after the user scrolls past the hero. Hides on `/receipt`, `/redeem`, `/admin`.
+13. **Map / directions** — new "Visit us" section on `/` with embedded map (OpenStreetMap iframe — no API key, no tracking) + address, hours, "Get directions" deep links (Google/Apple/Waze). Hours stored in `site_settings`.
 
-### Files touched (high level)
+---
 
-- New: `public/sw.js`, `src/lib/redeem-cache.ts`, `src/lib/redeem-outbox.ts`, `src/server/admin.functions.ts`, `src/server/dashboard.functions.ts`, supabase migration for `signup_edits`.
-- Edited: `src/routes/redeem.tsx`, `src/routes/admin.index.tsx`, `src/start.ts` (SW registration), `src/server/redeem.functions.ts` (batch endpoint).
+### Order of work (10 working days)
+
+```text
+Day 1   Migrations: signups.voided_*, referrals, testimonials,
+        faqs, staff_push_subscriptions, storage bucket
+Day 2   #1 CSV Export  +  #4 Soft-delete
+Day 3   #2 Conflict-resolution UI + outbox review tray
+Day 4   #3 Push Notifications (VAPID + SW + subscribe UI)
+Day 5   #5 Email confirmation (Lovable Emails) — domain check first
+Day 6   #5 SMS confirmation (Twilio connector) + #6 QR on receipt
+Day 7   #7 Referral tracking (cookie, link, admin card)
+Day 8   #8 Privacy + #11 FAQ (data + UI + JSON-LD)
+Day 9   #9 Testimonials section + #10 submission form + moderation
+Day 10  #12 Sticky CTA + #13 Map + QA pass + Lighthouse + publish v1.3
+```
+
+---
+
+### Technical notes (for the engineer, skip if non-technical)
+
+- **Schema additions**: new tables `referrals`, `testimonials`, `faqs`, `staff_push_subscriptions`; columns `voided_at/voided_by/void_reason` on `signups`; storage bucket `testimonials` (public read, admin write).
+- **RLS**: testimonials/faqs public-read where `published=true`, admin-write. Referrals admin-read. Push subscriptions admin-only.
+- **New server fns**: `exportSignups`, `voidSignup`, `subscribeStaffPush`, `sendSignupNotifications`, `submitTestimonial`, `moderateTestimonial`, `upsertFaq`. All use `requireSupabaseAuth` + admin check where appropriate.
+- **Confirmation emails**: requires Lovable Emails domain — will trigger the email-domain setup dialog on day 5 if not yet configured.
+- **Twilio SMS**: requires `standard_connectors--connect` to Twilio; ask user before day 6.
+- **No Edge Functions** — all logic stays in TanStack server fns per stack rules.
+- **SEO wins bundled in**: each new route (`/faq`, `/share-your-story`, `/privacy`) gets its own `head()` with title/desc/og. FAQ gets JSON-LD.
+
+---
+
+### Deferred to Sprint D / roadmap (from Feature_Summary)
+
+Multi-device staff session sync, custom date-range picker, waitlist + per-reward inventory caps, EN/FIL i18n, staff leaderboard, daily ops digest email, A/B test reward copy, POS webhook, exit-intent modal, GA4 + Meta Pixel, per-route OG images (auto-gen), real product photography swap.
+
+---
 
 ### Definition of done
 
-- Airplane-mode scan on a phone shows green success card and queues; reconnecting drains the queue with a visible counter going to zero.
-- Admin can change a name/mobile/reward on a signup and a row appears in `signup_edits`.
-- Dashboard "Last 7 days" filter changes all four KPIs and the country card lists at least PH plus any visitors from elsewhere.
+- Admin can export, void, and moderate testimonials/FAQs.
+- Staff device receives a push when a new signup arrives, and conflicts surface in a review tray.
+- A new signup gets an email (and SMS if enabled) within 30s; QR on receipt scans cleanly.
+- `/`, `/faq`, `/share-your-story`, `/privacy` each have unique `head()` metadata; FAQ JSON-LD validates in Rich Results Test.
+- Mobile sticky CTA appears after hero, never overlaps the form.
+- Map + hours visible on landing, "Get directions" opens correct app on iOS/Android.
+- Lighthouse mobile ≥ 90 on Performance, SEO, Best Practices.
+
+---
+
+### Open questions before kickoff
+
+1. SMS sender — keep Twilio, or skip SMS for v1.3 and ship email-only?
+2. Testimonials moderation — do you want notifications when a new one is submitted?
+3. Map provider — OpenStreetMap (free, no key) or Google Maps embed (needs API key)?
