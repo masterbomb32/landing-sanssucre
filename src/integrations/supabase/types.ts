@@ -110,6 +110,7 @@ export type Database = {
       }
       page_visits: {
         Row: {
+          country: string | null
           created_at: string
           id: string
           path: string
@@ -118,6 +119,7 @@ export type Database = {
           visitor_hash: string
         }
         Insert: {
+          country?: string | null
           created_at?: string
           id?: string
           path: string
@@ -126,6 +128,7 @@ export type Database = {
           visitor_hash: string
         }
         Update: {
+          country?: string | null
           created_at?: string
           id?: string
           path?: string
@@ -188,6 +191,41 @@ export type Database = {
           visitor_hash?: string
         }
         Relationships: []
+      }
+      signup_edits: {
+        Row: {
+          after: Json
+          before: Json
+          created_at: string
+          edited_by: string | null
+          id: string
+          signup_id: string
+        }
+        Insert: {
+          after: Json
+          before: Json
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          signup_id: string
+        }
+        Update: {
+          after?: Json
+          before?: Json
+          created_at?: string
+          edited_by?: string | null
+          id?: string
+          signup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signup_edits_signup_id_fkey"
+            columns: ["signup_id"]
+            isOneToOne: false
+            referencedRelation: "signups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       signups: {
         Row: {
