@@ -150,7 +150,11 @@ function FaqEditor({
         <div className="pb-2">
           <button
             type="button"
-            onClick={() => onChange({ ...value, published: !value.published })}
+            onClick={() => {
+              const next = { ...value, published: !value.published };
+              onChange(next);
+              onSave(next);
+            }}
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               value.published
                 ? "bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-300"
