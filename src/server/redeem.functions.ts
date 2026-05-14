@@ -6,32 +6,27 @@ const FeedbackSchema = z.object({
   code: z.string().trim().min(8).max(64),
   rating: z.number().int().min(1).max(5),
   comment: z.string().trim().max(500).optional().or(z.literal("").transform(() => undefined)),
+  share_publicly: z.boolean().optional().default(false),
+  photo_url: z.string().trim().max(500).optional().or(z.literal("").transform(() => undefined)),
+  source: z.string().trim().max(100).optional().or(z.literal("").transform(() => undefined)),
 });
 
 export const submitFeedback = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => FeedbackSchema.parse(input))
   .handler(async ({ data }) => {
-    // Find signup by code
-    const { data: signup, error: sErr } = await supabaseAdmin
-      .from("signups")
-      .select("id, redeemed_at")
-      .eq("redemption_code", data.code)
-      .maybeSingle();
-    if (sErr) throw new Error("Could not save feedback. Please try again.");
-    if (!signup) throw new Error("INVALID_CODE");
-    if (!signup.redeemed_at) throw new Error("NOT_REDEEMED");
-
-    const { error } = await supabaseAdmin
-      .from("feedback")
-      .insert({
-        signup_id: signup.id,
-        rating: data.rating,
-        comment: data.comment ?? null,
-      });
+    const { error } = await supabaseAdmin.rpc("submit_testimonial_for_code", {
+      p_code: data.code,
+      p_rating: data.rating,
+      p_comment: data.comment ?? null,
+      p_share_publicly: data.share_publicly ?? false,
+      p_photo_url: data.photo_url ?? null,
+      p_source: data.source ?? null,
+    });
     if (error) {
-      if (`${error.message}`.toLowerCase().includes("duplicate")) {
-        throw new Error("ALREADY_SUBMITTED");
-      }
+      const msg = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`;
+      if (msg.includes("ALREADY_SUBMITTED")) throw new Error("ALREADY_SUBMITTED");
+      if (msg.includes("INVALID_CODE")) throw new Error("INVALID_CODE");
+      if (msg.includes("NOT_REDEEMED")) throw new Error("NOT_REDEEMED");
       throw new Error("Could not save feedback. Please try again.");
     }
     return { ok: true };
@@ -49,7 +44,7 @@ export const fetchFeedbackStatus = createServerFn({ method: "GET" })
       .maybeSingle();
     if (!signup) return { exists: false };
     const { data: fb } = await supabaseAdmin
-      .from("feedback")
+      .from("testimonials")
       .select("rating")
       .eq("signup_id", signup.id)
       .maybeSingle();
