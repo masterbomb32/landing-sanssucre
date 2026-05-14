@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RedeemedCodeRouteImport } from './routes/redeemed.$code'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
+import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
 import { Route as AdminFaqsRouteImport } from './routes/admin.faqs'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
 
@@ -78,6 +79,11 @@ const ReceiptCodeRoute = ReceiptCodeRouteImport.update({
   path: '/receipt/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
+  id: '/testimonials',
+  path: '/testimonials',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFaqsRoute = AdminFaqsRouteImport.update({
   id: '/faqs',
   path: '/faqs',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin/'
@@ -273,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceiptCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/testimonials': {
+      id: '/admin/testimonials'
+      path: '/testimonials'
+      fullPath: '/admin/testimonials'
+      preLoaderRoute: typeof AdminTestimonialsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/faqs': {
       id: '/admin/faqs'
       path: '/faqs'
@@ -293,12 +312,14 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminCopyRoute: typeof AdminCopyRoute
   AdminFaqsRoute: typeof AdminFaqsRoute
+  AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCopyRoute: AdminCopyRoute,
   AdminFaqsRoute: AdminFaqsRoute,
+  AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
