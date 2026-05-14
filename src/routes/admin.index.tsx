@@ -15,6 +15,8 @@ import {
   Mail,
   Pencil,
   Globe,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
@@ -36,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateSignup } from "@/server/admin.functions";
+import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions";
 import { getCountryBreakdown } from "@/server/dashboard.functions";
 
 export const Route = createFileRoute("/admin/")({
@@ -52,6 +54,8 @@ interface Signup {
   redemption_code: string;
   redeemed_at: string | null;
   created_at: string;
+  voided_at?: string | null;
+  void_reason?: string | null;
 }
 
 interface Visit {
@@ -96,6 +100,8 @@ function Dashboard() {
   const [range, setRange] = useState<"today" | "7d" | "30d" | "all">("all");
   const [countries, setCountries] = useState<{ country: string; visitors: number }[]>([]);
   const updateSignupFn = useServerFn(updateSignup);
+  const voidSignupFn = useServerFn(voidSignup);
+  const unvoidSignupFn = useServerFn(unvoidSignup);
   const countryFn = useServerFn(getCountryBreakdown);
 
   const rangeBounds = useMemo(() => {
@@ -112,7 +118,7 @@ function Dashboard() {
     const [signupsRes, visitsRes, sharesRes, feedbackRes, mailingRes] = await Promise.all([
       supabase
         .from("signups")
-        .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at,created_at")
+        .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at,created_at,voided_at,void_reason")
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
@@ -176,7 +182,7 @@ function Dashboard() {
   }, [rows, q]);
 
   const stats = useMemo(() => {
-    const all = rows ?? [];
+    const all = (rows ?? []).filter((r) => !r.voided_at);
     const list = rangeBounds.from
       ? all.filter((r) => r.created_at >= rangeBounds.from!)
       : all;
@@ -230,12 +236,12 @@ function Dashboard() {
 
   const exportCsv = () => {
     const list = filtered;
-    const header = ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at"];
+    const header = ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at", "voided_at", "void_reason"];
     const lines = [header.join(",")];
     for (const r of list) {
       const reward = getReward(r.reward_choice)?.title ?? r.reward_choice;
       lines.push(
-        [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? ""]
+        [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? "", r.voided_at ?? "", r.void_reason ?? ""]
           .map((v) => `"${String(v).replace(/"/g, '""')}"`)
           .join(","),
       );
@@ -516,6 +522,10 @@ function Dashboard() {
                       <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs">
                         <Check className="h-3 w-3" /> Redeemed
                       </span>
+                    ) : r.voided_at ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive" title={r.void_reason ?? ""}>
+                        <Ban className="h-3 w-3" /> Voided
+                      </span>
                     ) : (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Reserved</span>
                     )}
@@ -530,7 +540,24 @@ function Dashboard() {
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      {r.redeemed_at ? (
+                      {r.voided_at ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Restore"
+                          onClick={async () => {
+                            try {
+                              await unvoidSignupFn({ data: { id: r.id } });
+                              toast.success("Restored.");
+                              load();
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Could not restore");
+                            }
+                          }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : r.redeemed_at ? (
                       <Link
                         to="/redeemed/$code"
                         params={{ code: r.redemption_code }}
@@ -540,9 +567,29 @@ function Dashboard() {
                         Thank-you →
                       </Link>
                     ) : (
+                      <>
                       <Button size="sm" variant="outline" disabled={busyCode === r.redemption_code} onClick={() => markRedeemed(r.redemption_code)}>
                         {busyCode === r.redemption_code ? <Loader2 className="h-3 w-3 animate-spin" /> : "Redeem"}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Void signup"
+                        onClick={async () => {
+                          const reason = window.prompt("Reason for voiding this signup?");
+                          if (!reason || !reason.trim()) return;
+                          try {
+                            await voidSignupFn({ data: { id: r.id, reason: reason.trim() } });
+                            toast.success("Signup voided.");
+                            load();
+                          } catch (e) {
+                            toast.error(e instanceof Error ? e.message : "Could not void");
+                          }
+                        }}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                      </>
                     )}
                     </div>
                   </td>

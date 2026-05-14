@@ -74,6 +74,8 @@ export const prefetchUnredeemed = createServerFn({ method: "POST" })
       .from("signups")
       .select("id,redemption_code,name,reward_choice,created_at")
       .is("redeemed_at", null)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .is("voided_at" as any, null)
       .order("created_at", { ascending: false })
       .limit(5000);
     if (error) throw new Error("Could not load codes.");

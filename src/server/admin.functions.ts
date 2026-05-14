@@ -100,3 +100,76 @@ export const updateSignup = createServerFn({ method: "POST" })
 
     return { ok: true, signup: after, unchanged: false };
   });
+
+// ---- Soft-delete (void) a signup ----
+
+const VoidSchema = z.object({
+  id: z.string().uuid(),
+  reason: z.string().trim().min(1).max(500),
+});
+
+export const voidSignup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => VoidSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (isAdmin !== true) throw new Error("NOT_ADMIN");
+
+    const { data: before, error: loadErr } = await supabaseAdmin
+      .from("signups")
+      .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .eq("id" as any, data.id)
+      .single();
+    if (loadErr || !before) throw new Error("NOT_FOUND");
+
+    const patch = {
+      voided_at: new Date().toISOString(),
+      voided_by: userId,
+      void_reason: data.reason,
+    };
+    const { error: upErr } = await supabaseAdmin
+      .from("signups")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(patch as any)
+      .eq("id", data.id);
+    if (upErr) throw new Error("Could not void signup.");
+
+    await supabaseAdmin
+      .from("signup_edits")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .insert({
+        signup_id: data.id,
+        edited_by: userId,
+        before: before as unknown as Record<string, unknown>,
+        after: { ...(before as Record<string, unknown>), ...patch } as Record<string, unknown>,
+      } as any);
+
+    return { ok: true };
+  });
+
+const UnvoidSchema = z.object({ id: z.string().uuid() });
+
+export const unvoidSignup = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => UnvoidSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (isAdmin !== true) throw new Error("NOT_ADMIN");
+
+    const { error } = await supabaseAdmin
+      .from("signups")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ voided_at: null, voided_by: null, void_reason: null } as any)
+      .eq("id", data.id);
+    if (error) throw new Error("Could not restore signup.");
+    return { ok: true };
+  });
