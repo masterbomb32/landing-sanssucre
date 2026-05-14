@@ -74,7 +74,7 @@ interface ShareEvent {
 
 interface FeedbackRow {
   id: string;
-  signup_id: string;
+  signup_id: string | null;
   rating: number;
   comment: string | null;
   created_at: string;
@@ -132,8 +132,9 @@ function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
-        .from("feedback")
-        .select("id,signup_id,rating,comment,created_at")
+        .from("testimonials")
+        .select("id,signup_id,rating,quote,created_at")
+        .not("rating", "is", null)
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
@@ -151,7 +152,15 @@ function Dashboard() {
     setRows(signupsRes.data ?? []);
     setVisits(visitsRes.data ?? []);
     setShares(sharesRes.data ?? []);
-    setFeedback(feedbackRes.data ?? []);
+    setFeedback(
+      (feedbackRes.data ?? []).map((r) => ({
+        id: r.id,
+        signup_id: r.signup_id,
+        rating: r.rating as number,
+        comment: r.quote,
+        created_at: r.created_at,
+      })),
+    );
     setMailing(mailingRes.data ?? []);
   };
 
@@ -453,7 +462,7 @@ function Dashboard() {
                 <div className="flex items-center gap-2">
                   <span className="text-amber-500">{"★".repeat(f.rating)}<span className="text-muted-foreground/30">{"★".repeat(5 - f.rating)}</span></span>
                   <span className="text-xs text-muted-foreground">
-                    {signupNameById[f.signup_id] ?? "Guest"} ·{" "}
+                    {(f.signup_id && signupNameById[f.signup_id]) || "Guest"} ·{" "}
                     {formatDateTime(f.created_at, { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </div>
