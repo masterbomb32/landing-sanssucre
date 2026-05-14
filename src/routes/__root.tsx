@@ -77,6 +77,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster richColors position="top-center" />
         <Scripts />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})});}",
+          }}
+        />
       </body>
     </html>
   );
