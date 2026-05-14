@@ -44,38 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      feedback: {
-        Row: {
-          comment: string | null
-          created_at: string
-          id: string
-          rating: number
-          signup_id: string
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating: number
-          signup_id: string
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string
-          id?: string
-          rating?: number
-          signup_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "feedback_signup_id_fkey"
-            columns: ["signup_id"]
-            isOneToOne: true
-            referencedRelation: "signups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       mailing_subscriptions: {
         Row: {
           created_at: string
@@ -415,34 +383,43 @@ export type Database = {
       }
       testimonials: {
         Row: {
+          comment_only: boolean
           created_at: string
           id: string
           name: string
           photo_url: string | null
           published: boolean
-          quote: string
+          quote: string | null
+          rating: number | null
+          signup_id: string | null
           sort_order: number
           source: string | null
           updated_at: string
         }
         Insert: {
+          comment_only?: boolean
           created_at?: string
           id?: string
           name: string
           photo_url?: string | null
           published?: boolean
-          quote: string
+          quote?: string | null
+          rating?: number | null
+          signup_id?: string | null
           sort_order?: number
           source?: string | null
           updated_at?: string
         }
         Update: {
+          comment_only?: boolean
           created_at?: string
           id?: string
           name?: string
           photo_url?: string | null
           published?: boolean
-          quote?: string
+          quote?: string | null
+          rating?: number | null
+          signup_id?: string | null
           sort_order?: number
           source?: string | null
           updated_at?: string
@@ -495,6 +472,17 @@ export type Database = {
           redemption_code: string
           reward_choice: string
         }[]
+      }
+      submit_testimonial_for_code: {
+        Args: {
+          p_code: string
+          p_comment: string
+          p_photo_url: string
+          p_rating: number
+          p_share_publicly: boolean
+          p_source: string
+        }
+        Returns: string
       }
       unredeem_signup: {
         Args: { p_code: string; p_window_seconds?: number }

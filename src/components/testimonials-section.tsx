@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface Testimonial {
   id: string;
   name: string;
-  quote: string;
+  quote: string | null;
   source: string | null;
   photo_url: string | null;
 }
@@ -21,6 +21,8 @@ export function TestimonialsSection() {
         .from("testimonials")
         .select("id,name,quote,source,photo_url")
         .eq("published", true)
+        .eq("comment_only", false)
+        .not("quote", "is", null)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false })
         .limit(6);
