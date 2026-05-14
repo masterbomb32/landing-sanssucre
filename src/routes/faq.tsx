@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Accordion,
@@ -15,6 +14,14 @@ interface Faq {
 }
 
 export const Route = createFileRoute("/faq")({
+  loader: async () => {
+    const { data } = await supabase
+      .from("faqs")
+      .select("id,question,answer")
+      .eq("published", true)
+      .order("sort_order", { ascending: true });
+    return { faqs: (data ?? []) as Faq[] };
+  },
   head: () => ({
     meta: [
       { title: "FAQ — Sans Sucre" },
@@ -35,26 +42,7 @@ export const Route = createFileRoute("/faq")({
 });
 
 function FaqPage() {
-  const [faqs, setFaqs] = useState<Faq[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("faqs")
-        .select("id,question,answer")
-        .eq("published", true)
-        .order("sort_order", { ascending: true });
-      if (!cancelled) {
-        setFaqs(data ?? []);
-        setLoaded(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { faqs } = Route.useLoaderData() as { faqs: Faq[] };
 
   // FAQPage JSON-LD for SEO
   const jsonLd = {
@@ -80,9 +68,7 @@ function FaqPage() {
           </p>
         </header>
 
-        {!loaded ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
-        ) : faqs.length === 0 ? (
+        {faqs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No questions published yet.</p>
         ) : (
           <Accordion type="single" collapsible className="w-full">
