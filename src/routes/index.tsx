@@ -8,6 +8,7 @@ import metroLogo from "@/assets/metro-logo.png";
 import atcLogo from "@/assets/atc-logo.png";
 import { SignupForm } from "@/components/signup-form";
 import { ShareButton } from "@/components/share-button";
+import { TestimonialsSection } from "@/components/testimonials-section";
 import { useTrackVisit } from "@/hooks/use-track-visit";
 import { siteCopy as defaults } from "@/lib/site-copy";
 import { useSiteCopy } from "@/hooks/use-site-copy";
@@ -29,6 +30,15 @@ export const Route = createFileRoute("/")({
 function Index() {
   useTrackVisit("/");
   const siteCopy = useSiteCopy();
+  // Capture ?ref=CODE so the signup form can attribute the referral.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && /^[A-Z0-9]{8,64}$/i.test(ref)) {
+      sessionStorage.setItem("ss_referral_code", ref.toUpperCase());
+    }
+  }, []);
   const heroRef = useRef<HTMLElement | null>(null);
   const formRef = useRef<HTMLElement | null>(null);
   const [heroVisible, setHeroVisible] = useState(true);
@@ -174,6 +184,8 @@ function Index() {
         </div>
       </section>
 
+      <TestimonialsSection />
+
       <footer className="border-t bg-secondary/40 py-10 text-center text-sm text-muted-foreground">
         <img
           src={logo}
@@ -193,6 +205,14 @@ function Index() {
         <p className="mt-1">
           <Link to="/privacy" className="hover:text-foreground">
             {siteCopy.footer.privacyLabel}
+          </Link>
+          <span className="px-2 text-muted-foreground/60">·</span>
+          <Link to="/faq" className="hover:text-foreground">
+            FAQ
+          </Link>
+          <span className="px-2 text-muted-foreground/60">·</span>
+          <Link to="/share-your-story" className="hover:text-foreground">
+            Share your story
           </Link>
           <span className="px-2 text-muted-foreground/60">·</span>
           <Link to="/find" className="hover:text-foreground">

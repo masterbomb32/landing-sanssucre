@@ -9,17 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ShareYourStoryRouteImport } from './routes/share-your-story'
 import { Route as RedeemRouteImport } from './routes/redeem'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FindRouteImport } from './routes/find'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RedeemedCodeRouteImport } from './routes/redeemed.$code'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
+import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
+import { Route as AdminFaqsRouteImport } from './routes/admin.faqs'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
 
+const ShareYourStoryRoute = ShareYourStoryRouteImport.update({
+  id: '/share-your-story',
+  path: '/share-your-story',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RedeemRoute = RedeemRouteImport.update({
   id: '/redeem',
   path: '/redeem',
@@ -38,6 +47,11 @@ const LoginRoute = LoginRouteImport.update({
 const FindRoute = FindRouteImport.update({
   id: '/find',
   path: '/find',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -65,6 +79,16 @@ const ReceiptCodeRoute = ReceiptCodeRouteImport.update({
   path: '/receipt/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
+  id: '/testimonials',
+  path: '/testimonials',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminFaqsRoute = AdminFaqsRouteImport.update({
+  id: '/faqs',
+  path: '/faqs',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCopyRoute = AdminCopyRouteImport.update({
   id: '/copy',
   path: '/copy',
@@ -74,22 +98,30 @@ const AdminCopyRoute = AdminCopyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/faq': typeof FaqRoute
   '/find': typeof FindRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
+  '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/faq': typeof FaqRoute
   '/find': typeof FindRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
+  '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin': typeof AdminIndexRoute
@@ -98,11 +130,15 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/faq': typeof FaqRoute
   '/find': typeof FindRoute
   '/login': typeof LoginRoute
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
+  '/share-your-story': typeof ShareYourStoryRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
   '/admin/': typeof AdminIndexRoute
@@ -112,22 +148,30 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/faq'
     | '/find'
     | '/login'
     | '/privacy'
     | '/redeem'
+    | '/share-your-story'
     | '/admin/copy'
+    | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/faq'
     | '/find'
     | '/login'
     | '/privacy'
     | '/redeem'
+    | '/share-your-story'
     | '/admin/copy'
+    | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin'
@@ -135,11 +179,15 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/faq'
     | '/find'
     | '/login'
     | '/privacy'
     | '/redeem'
+    | '/share-your-story'
     | '/admin/copy'
+    | '/admin/faqs'
+    | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
     | '/admin/'
@@ -148,16 +196,25 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  FaqRoute: typeof FaqRoute
   FindRoute: typeof FindRoute
   LoginRoute: typeof LoginRoute
   PrivacyRoute: typeof PrivacyRoute
   RedeemRoute: typeof RedeemRoute
+  ShareYourStoryRoute: typeof ShareYourStoryRoute
   ReceiptCodeRoute: typeof ReceiptCodeRoute
   RedeemedCodeRoute: typeof RedeemedCodeRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/share-your-story': {
+      id: '/share-your-story'
+      path: '/share-your-story'
+      fullPath: '/share-your-story'
+      preLoaderRoute: typeof ShareYourStoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/redeem': {
       id: '/redeem'
       path: '/redeem'
@@ -184,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/find'
       fullPath: '/find'
       preLoaderRoute: typeof FindRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -221,6 +285,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceiptCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/testimonials': {
+      id: '/admin/testimonials'
+      path: '/testimonials'
+      fullPath: '/admin/testimonials'
+      preLoaderRoute: typeof AdminTestimonialsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/faqs': {
+      id: '/admin/faqs'
+      path: '/faqs'
+      fullPath: '/admin/faqs'
+      preLoaderRoute: typeof AdminFaqsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/copy': {
       id: '/admin/copy'
       path: '/copy'
@@ -233,11 +311,15 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminCopyRoute: typeof AdminCopyRoute
+  AdminFaqsRoute: typeof AdminFaqsRoute
+  AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminCopyRoute: AdminCopyRoute,
+  AdminFaqsRoute: AdminFaqsRoute,
+  AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -246,10 +328,12 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  FaqRoute: FaqRoute,
   FindRoute: FindRoute,
   LoginRoute: LoginRoute,
   PrivacyRoute: PrivacyRoute,
   RedeemRoute: RedeemRoute,
+  ShareYourStoryRoute: ShareYourStoryRoute,
   ReceiptCodeRoute: ReceiptCodeRoute,
   RedeemedCodeRoute: RedeemedCodeRoute,
 }

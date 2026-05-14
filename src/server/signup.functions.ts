@@ -26,6 +26,13 @@ const SignupSchema = z.object({
   rewardChoice: z.string().refine((v) => REWARDS.some((r) => r.id === v), {
     message: "Please choose a reward.",
   }),
+  referralCode: z
+    .string()
+    .trim()
+    .min(8)
+    .max(64)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 function generateCode(): string {
@@ -74,7 +81,30 @@ export const createSignup = createServerFn({ method: "POST" })
         .single();
 
       if (!error && row) {
-        // Fire-and-forget notifications — added in a later step.
+        // If a referral code was provided, link the referral (best effort).
+        if (data.referralCode) {
+          try {
+            const refCode = data.referralCode.toUpperCase();
+            const { data: referrer } = await supabaseAdmin
+              .from("signups")
+              .select("id")
+              .eq("redemption_code", refCode)
+              .maybeSingle();
+            const { data: referred } = await supabaseAdmin
+              .from("signups")
+              .select("id")
+              .eq("redemption_code", row.redemption_code)
+              .maybeSingle();
+            if (referrer?.id && referred?.id && referrer.id !== referred.id) {
+              await supabaseAdmin.from("referrals").insert({
+                referrer_signup_id: referrer.id,
+                referred_signup_id: referred.id,
+              });
+            }
+          } catch (e) {
+            console.error("recordReferral error", e);
+          }
+        }
         return { code: row.redemption_code, alreadyRegistered: false };
       }
 

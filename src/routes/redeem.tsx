@@ -20,6 +20,7 @@ import {
 } from "@/lib/redeem-cache";
 import { enqueue, listOutbox, outboxSize, replaceOutbox } from "@/lib/redeem-outbox";
 import { prefetchUnredeemed, redeemBatch } from "@/server/redeem.functions";
+import { logRedeemConflict } from "@/server/conflict.functions";
 
 export const Route = createFileRoute("/redeem")({
   head: () => ({
@@ -68,6 +69,7 @@ function RedeemStation() {
   const [cacheAt, setCacheAt] = useState<number | null>(null);
   const prefetchFn = useServerFn(prefetchUnredeemed);
   const batchFn = useServerFn(redeemBatch);
+  const conflictFn = useServerFn(logRedeemConflict);
 
   // Load PIN from settings + check session
   useEffect(() => {
@@ -535,6 +537,19 @@ function RedeemStation() {
             undoSecondsLeft={undoSecondsLeft}
             onUndo={undoLast}
             undoing={undoing}
+            onLogConflict={async (note) => {
+              const pin = sessionStorage.getItem(PIN_CACHE_KEY);
+              if (!pin) {
+                toast.error("Re-enter staff PIN to log conflicts.");
+                return;
+              }
+              try {
+                await conflictFn({ data: { pin, code: result.kind === "already" ? result.code : "", note } });
+                toast.success("Conflict logged. Admin will review.");
+              } catch {
+                toast.error("Could not log conflict.");
+              }
+            }}
           />
         )}
       </div>
