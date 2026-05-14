@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Accordion,
@@ -14,14 +15,6 @@ interface Faq {
 }
 
 export const Route = createFileRoute("/faq")({
-  loader: async () => {
-    const { data } = await supabase
-      .from("faqs")
-      .select("id,question,answer")
-      .eq("published", true)
-      .order("sort_order", { ascending: true });
-    return { faqs: (data ?? []) as Faq[] };
-  },
   head: () => ({
     meta: [
       { title: "FAQ — Sans Sucre" },
@@ -42,13 +35,22 @@ export const Route = createFileRoute("/faq")({
 });
 
 function FaqPage() {
-  const { faqs } = Route.useLoaderData() as { faqs: Faq[] };
+  const [faqs, setFaqs] = useState<Faq[] | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("faqs")
+      .select("id,question,answer")
+      .eq("published", true)
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => setFaqs((data ?? []) as Faq[]));
+  }, []);
 
   // FAQPage JSON-LD for SEO
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: faqs.map((f) => ({
+    mainEntity: (faqs ?? []).map((f) => ({
       "@type": "Question",
       name: f.question,
       acceptedAnswer: { "@type": "Answer", text: f.answer },
@@ -68,7 +70,9 @@ function FaqPage() {
           </p>
         </header>
 
-        {faqs.length === 0 ? (
+        {faqs === null ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : faqs.length === 0 ? (
           <p className="text-sm text-muted-foreground">No questions published yet.</p>
         ) : (
           <Accordion type="single" collapsible className="w-full">
@@ -96,7 +100,7 @@ function FaqPage() {
         </div>
       </article>
 
-      {faqs.length > 0 && (
+      {faqs && faqs.length > 0 && (
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
