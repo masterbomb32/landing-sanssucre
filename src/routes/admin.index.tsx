@@ -522,6 +522,10 @@ function Dashboard() {
                       <span className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs">
                         <Check className="h-3 w-3" /> Redeemed
                       </span>
+                    ) : r.voided_at ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs text-destructive" title={r.void_reason ?? ""}>
+                        <Ban className="h-3 w-3" /> Voided
+                      </span>
                     ) : (
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Reserved</span>
                     )}
@@ -536,7 +540,24 @@ function Dashboard() {
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
-                      {r.redeemed_at ? (
+                      {r.voided_at ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Restore"
+                          onClick={async () => {
+                            try {
+                              await unvoidSignupFn({ data: { id: r.id } });
+                              toast.success("Restored.");
+                              load();
+                            } catch (e) {
+                              toast.error(e instanceof Error ? e.message : "Could not restore");
+                            }
+                          }}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : r.redeemed_at ? (
                       <Link
                         to="/redeemed/$code"
                         params={{ code: r.redemption_code }}
@@ -546,9 +567,29 @@ function Dashboard() {
                         Thank-you →
                       </Link>
                     ) : (
+                      <>
                       <Button size="sm" variant="outline" disabled={busyCode === r.redemption_code} onClick={() => markRedeemed(r.redemption_code)}>
                         {busyCode === r.redemption_code ? <Loader2 className="h-3 w-3 animate-spin" /> : "Redeem"}
                       </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        title="Void signup"
+                        onClick={async () => {
+                          const reason = window.prompt("Reason for voiding this signup?");
+                          if (!reason || !reason.trim()) return;
+                          try {
+                            await voidSignupFn({ data: { id: r.id, reason: reason.trim() } });
+                            toast.success("Signup voided.");
+                            load();
+                          } catch (e) {
+                            toast.error(e instanceof Error ? e.message : "Could not void");
+                          }
+                        }}
+                      >
+                        <Ban className="h-3.5 w-3.5" />
+                      </Button>
+                      </>
                     )}
                     </div>
                   </td>
