@@ -268,23 +268,23 @@ function ReceiptPage() {
               </div>
             </div>
 
-            {/* 6: Share */}
-            <ShareButton
-              className="h-10 w-full"
-              text={`I just reserved a treat at ${siteCopy.brand.name}'s opening! Get yours:`}
-            />
-
-            {/* 7: Save / Print */}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (typeof window !== "undefined") window.print();
-              }}
-              className="flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-            >
-              Save / Print
-            </a>
+            {/* 6 + 7: Share | Save / Print */}
+            <div className="flex gap-2">
+              <ShareButton
+                className="h-10 flex-1"
+                text={`I just reserved a treat at ${siteCopy.brand.name}'s opening! Get yours:`}
+              />
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (typeof window !== "undefined") window.print();
+                }}
+                className="flex h-10 flex-1 items-center justify-center rounded-md border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+              >
+                Save / Print
+              </a>
+            </div>
 
             {/* 10: Location card */}
             <div className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2.5 text-[11.5px] leading-snug">
