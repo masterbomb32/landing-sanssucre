@@ -27,6 +27,7 @@ function ShareYourStoryPage() {
   const [quote, setQuote] = useState("");
   const [source, setSource] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -142,14 +143,32 @@ function ShareYourStoryPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="photo">
-                Photo <span className="text-muted-foreground">(optional, max 5MB)</span>
+                Add a photo of yourself or your Sans Sucre treat{" "}
+                <span className="text-muted-foreground">(optional, max 5MB)</span>
               </Label>
+              <p className="text-xs text-muted-foreground">
+                A clear photo of you, or of the item you ordered. Square or portrait works best.
+              </p>
               <Input
                 id="photo"
                 type="file"
                 accept="image/*"
-                onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setPhoto(file);
+                  if (photoPreview) URL.revokeObjectURL(photoPreview);
+                  setPhotoPreview(file ? URL.createObjectURL(file) : null);
+                }}
               />
+              {photoPreview && (
+                <div className="mt-2">
+                  <img
+                    src={photoPreview}
+                    alt="Selected preview"
+                    className="h-32 w-32 rounded-md border object-cover"
+                  />
+                </div>
+              )}
             </div>
             <Button type="submit" size="lg" className="w-full" disabled={submitting}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit my story"}
