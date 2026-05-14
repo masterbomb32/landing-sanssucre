@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { Quote } from "lucide-react";
 
 interface Testimonial {
   id: string;
@@ -62,29 +61,25 @@ export function TestimonialsSection() {
         {items.map((t) => (
           <figure
             key={t.id}
-            className="flex flex-col gap-3 rounded-2xl border bg-card p-5 shadow-sm transition-shadow hover:shadow-md"
+            className="flex flex-col gap-4 rounded-2xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
           >
-            <Quote className="h-5 w-5 text-primary/60" aria-hidden />
-            <blockquote className="flex-1 text-sm leading-relaxed text-foreground/85">
+            {t.photo_url ? (
+              <img
+                src={t.photo_url}
+                alt={t.name}
+                loading="lazy"
+                className="h-16 w-16 rounded-full object-cover sm:h-[72px] sm:w-[72px]"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-xl font-semibold text-foreground/70 sm:h-[72px] sm:w-[72px]">
+                {t.name.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+            <blockquote className="flex-1 font-display text-lg leading-snug text-foreground sm:text-xl">
               "{t.quote}"
             </blockquote>
-            <figcaption className="flex items-center gap-3 border-t pt-3">
-              {t.photo_url ? (
-                <img
-                  src={t.photo_url}
-                  alt={t.name}
-                  loading="lazy"
-                  className="h-9 w-9 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-foreground/70">
-                  {t.name.slice(0, 1).toUpperCase()}
-                </div>
-              )}
-              <div className="text-xs">
-                <div className="font-semibold text-foreground">{t.name}</div>
-                {t.source && <div className="text-muted-foreground">{t.source}</div>}
-              </div>
+            <figcaption className="text-xs text-muted-foreground">
+              — {t.name}{t.source ? ` · ${t.source}` : ""}
             </figcaption>
           </figure>
         ))}
