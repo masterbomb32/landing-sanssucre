@@ -287,6 +287,9 @@ function FeedbackBlock({
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(alreadySubmitted);
   const [showComment, setShowComment] = useState(false);
+  const [sharePublicly, setSharePublicly] = useState(false);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
   if (done) {
     return (
@@ -301,9 +304,37 @@ function FeedbackBlock({
       toast.error("Please pick a rating");
       return;
     }
+    if (sharePublicly && comment.trim().length < 5) {
+      toast.error("Please add a short story to share publicly.");
+      return;
+    }
     setSubmitting(true);
     try {
-      await submitFeedback({ data: { code, rating, comment: comment.trim() || undefined } });
+      let photo_url: string | undefined;
+      if (sharePublicly && photo) {
+        if (photo.size > 5 * 1024 * 1024) {
+          toast.error("Photo must be smaller than 5MB.");
+          setSubmitting(false);
+          return;
+        }
+        const ext = photo.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+        const path = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("testimonial-photos")
+          .upload(path, photo, { contentType: photo.type, cacheControl: "3600" });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("testimonial-photos").getPublicUrl(path);
+        photo_url = pub.publicUrl;
+      }
+      await submitFeedback({
+        data: {
+          code,
+          rating,
+          comment: comment.trim() || undefined,
+          share_publicly: sharePublicly,
+          photo_url,
+        },
+      });
       setDone(true);
       toast.success(copy.feedbackThanks);
     } catch (e: any) {
@@ -346,15 +377,45 @@ function FeedbackBlock({
         })}
       </div>
       {showComment && (
-        <div className="mt-2 flex gap-1.5">
+        <div className="mt-2 space-y-2 text-left">
           <Textarea
             value={comment}
             onChange={(e) => setComment(e.target.value.slice(0, 500))}
             placeholder={copy.feedbackPlaceholder}
-            rows={1}
-            className="min-h-8 resize-none text-xs"
+            rows={2}
+            className="min-h-12 resize-none text-xs"
           />
-          <Button onClick={submit} disabled={submitting || rating < 1} size="sm" className="h-auto px-3 text-xs">
+          <label className="flex items-start gap-2 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={sharePublicly}
+              onChange={(e) => setSharePublicly(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>Share my story publicly on the Sans Sucre site (with my name).</span>
+          </label>
+          {sharePublicly && (
+            <div className="space-y-1.5 rounded-lg border border-primary/15 bg-primary/5 p-2">
+              <label className="block text-[11px] text-muted-foreground">
+                Add a photo (optional)
+              </label>
+              <Input
+                type="file"
+                accept="image/*"
+                className="h-8 text-xs"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setPhoto(file);
+                  if (photoPreview) URL.revokeObjectURL(photoPreview);
+                  setPhotoPreview(file ? URL.createObjectURL(file) : null);
+                }}
+              />
+              {photoPreview && (
+                <img src={photoPreview} alt="" className="h-16 w-16 rounded-md border object-cover" />
+              )}
+            </div>
+          )}
+          <Button onClick={submit} disabled={submitting || rating < 1} size="sm" className="w-full h-8 text-xs">
             {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : copy.feedbackSubmit}
           </Button>
         </div>
