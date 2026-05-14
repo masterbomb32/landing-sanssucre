@@ -119,8 +119,8 @@ export const createSignup = createServerFn({ method: "POST" })
 const VisitSchema = z.object({
   visitorId: z.string().min(8).max(128),
   path: z.string().min(1).max(200),
-  referrer: z.string().max(500).optional(),
-  userAgent: z.string().max(500).optional(),
+  referrer: z.string().max(2000).optional().transform((v) => (v ? v.slice(0, 500) : v)),
+  userAgent: z.string().max(2000).optional().transform((v) => (v ? v.slice(0, 500) : v)),
 });
 
 export const logVisit = createServerFn({ method: "POST" })
