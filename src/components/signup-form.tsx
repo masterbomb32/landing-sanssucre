@@ -58,14 +58,20 @@ export function SignupForm() {
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
     try {
+      const referralCode =
+        typeof window !== "undefined"
+          ? sessionStorage.getItem("ss_referral_code") ?? undefined
+          : undefined;
       const { code } = await createSignup({
         data: {
           name: values.name,
           mobile: values.mobile,
           email: values.email || undefined,
           rewardChoice: values.rewardChoice,
+          referralCode,
         },
       });
+      if (typeof window !== "undefined") sessionStorage.removeItem("ss_referral_code");
       toast.success("You're in! Saving your reward…");
       navigate({ to: "/receipt/$code", params: { code } });
     } catch (e) {

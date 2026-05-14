@@ -75,6 +75,8 @@ function AdminLayout() {
   const nav = [
     { to: "/admin", label: "Dashboard" },
     { to: "/admin/copy", label: "Edit copy" },
+    { to: "/admin/faqs", label: "FAQs" },
+    { to: "/admin/testimonials", label: "Testimonials" },
     { to: "/redeem", label: "Scan station" },
   ];
 
