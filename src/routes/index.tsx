@@ -83,7 +83,7 @@ function Index() {
   return (
     <main className="min-h-screen bg-background pb-24 md:pb-0">
       {/* Cinematic full-bleed hero */}
-      <section ref={heroRef} className="relative isolate min-h-[78vh] overflow-hidden md:min-h-[85vh]">
+      <section ref={heroRef} className="relative isolate overflow-hidden">
         <picture>
           <source srcSet={heroWebp} type="image/webp" />
           <img
@@ -105,11 +105,11 @@ function Index() {
           className="absolute inset-x-0 bottom-0 -z-10 h-32 bg-gradient-to-b from-transparent to-background"
         />
 
-        <div className="mx-auto flex max-w-6xl items-center justify-end px-5 pt-5">
+        <div className="mx-auto flex max-w-6xl items-center justify-end px-5 pt-3">
           <ShareButton variant="ghost" className="hidden sm:inline-flex" />
         </div>
 
-        <div className="mx-auto flex max-w-6xl flex-col px-6 pb-20 pt-10 sm:px-5 sm:pt-14 md:min-h-[75vh] md:justify-center md:pb-24">
+        <div className="mx-auto flex max-w-6xl flex-col px-6 pb-12 pt-2 sm:px-5 sm:pt-4 md:pb-16">
           <div className="max-w-xl">
             <img
               src={logo}
