@@ -15,6 +15,8 @@ import {
   Mail,
   Pencil,
   Globe,
+  Ban,
+  RotateCcw,
 } from "lucide-react";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { formatDateTime } from "@/lib/format-date";
@@ -36,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateSignup } from "@/server/admin.functions";
+import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions";
 import { getCountryBreakdown } from "@/server/dashboard.functions";
 
 export const Route = createFileRoute("/admin/")({
@@ -52,6 +54,8 @@ interface Signup {
   redemption_code: string;
   redeemed_at: string | null;
   created_at: string;
+  voided_at?: string | null;
+  void_reason?: string | null;
 }
 
 interface Visit {
@@ -96,6 +100,8 @@ function Dashboard() {
   const [range, setRange] = useState<"today" | "7d" | "30d" | "all">("all");
   const [countries, setCountries] = useState<{ country: string; visitors: number }[]>([]);
   const updateSignupFn = useServerFn(updateSignup);
+  const voidSignupFn = useServerFn(voidSignup);
+  const unvoidSignupFn = useServerFn(unvoidSignup);
   const countryFn = useServerFn(getCountryBreakdown);
 
   const rangeBounds = useMemo(() => {
@@ -112,7 +118,7 @@ function Dashboard() {
     const [signupsRes, visitsRes, sharesRes, feedbackRes, mailingRes] = await Promise.all([
       supabase
         .from("signups")
-        .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at,created_at")
+        .select("id,name,mobile,email,reward_choice,redemption_code,redeemed_at,created_at,voided_at,void_reason")
         .order("created_at", { ascending: false })
         .limit(1000),
       supabase
@@ -176,7 +182,7 @@ function Dashboard() {
   }, [rows, q]);
 
   const stats = useMemo(() => {
-    const all = rows ?? [];
+    const all = (rows ?? []).filter((r) => !r.voided_at);
     const list = rangeBounds.from
       ? all.filter((r) => r.created_at >= rangeBounds.from!)
       : all;
@@ -230,12 +236,12 @@ function Dashboard() {
 
   const exportCsv = () => {
     const list = filtered;
-    const header = ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at"];
+    const header = ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at", "voided_at", "void_reason"];
     const lines = [header.join(",")];
     for (const r of list) {
       const reward = getReward(r.reward_choice)?.title ?? r.reward_choice;
       lines.push(
-        [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? ""]
+        [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? "", r.voided_at ?? "", r.void_reason ?? ""]
           .map((v) => `"${String(v).replace(/"/g, '""')}"`)
           .join(","),
       );
