@@ -285,6 +285,7 @@ function FeedbackBlock({
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [comment, setComment] = useState("");
+  const [source, setSource] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(alreadySubmitted);
   const [showComment, setShowComment] = useState(false);
@@ -294,8 +295,17 @@ function FeedbackBlock({
 
   if (done) {
     return (
-      <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
-        <Check className="h-3.5 w-3.5" /> {copy.feedbackThanks}
+      <div className="space-y-1.5 text-center">
+        <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
+          <Check className="h-3.5 w-3.5" /> {copy.feedbackThanks}
+        </div>
+        <Link
+          to="/share-your-story"
+          search={{ code }}
+          className="inline-block text-[11px] text-primary underline underline-offset-2 hover:text-primary/80"
+        >
+          Want to share more publicly? →
+        </Link>
       </div>
     );
   }
@@ -334,6 +344,7 @@ function FeedbackBlock({
           comment: comment.trim() || undefined,
           share_publicly: sharePublicly,
           photo_url,
+          source: sharePublicly ? source.trim() || undefined : undefined,
         },
       });
       setDone(true);
@@ -398,6 +409,16 @@ function FeedbackBlock({
           {sharePublicly && (
             <div className="space-y-1.5 rounded-lg border border-primary/15 bg-primary/5 p-2">
               <label className="block text-[11px] text-muted-foreground">
+                Where you're from (optional)
+              </label>
+              <Input
+                value={source}
+                onChange={(e) => setSource(e.target.value.slice(0, 100))}
+                placeholder="Alabang, Muntinlupa"
+                className="h-8 text-xs"
+                maxLength={100}
+              />
+              <label className="block text-[11px] text-muted-foreground">
                 Add a photo (optional)
               </label>
               <Input
@@ -419,6 +440,18 @@ function FeedbackBlock({
           <Button onClick={submit} disabled={submitting || rating < 1} size="sm" className="w-full h-8 text-xs">
             {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : copy.feedbackSubmit}
           </Button>
+          {!sharePublicly && (
+            <p className="text-center text-[10px] text-muted-foreground">
+              Or{" "}
+              <Link
+                to="/share-your-story"
+                search={{ code }}
+                className="text-primary underline underline-offset-2"
+              >
+                share a fuller story publicly →
+              </Link>
+            </p>
+          )}
         </div>
       )}
     </div>
