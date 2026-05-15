@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +11,11 @@ import { toast } from "sonner";
 import { submitPublicStory, fetchSignupForCode } from "@/server/redeem.functions";
 
 const searchSchema = z.object({
-  code: fallback(z.string().trim().min(8).max(64).optional(), undefined),
+  code: z.string().trim().min(8).max(64).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/share-your-story")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search) => searchSchema.parse(search),
   head: () => ({
     meta: [
       { title: "Share your Sans Sucre story" },
