@@ -8,6 +8,7 @@ import { ShareButton } from "@/components/share-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { fetchReceipt } from "@/server/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
 import { subscribeMailingList } from "@/server/mailing.functions";
@@ -299,13 +300,6 @@ function FeedbackBlock({
         <div className="flex items-center justify-center gap-1.5 text-xs font-medium text-emerald-600">
           <Check className="h-3.5 w-3.5" /> {copy.feedbackThanks}
         </div>
-        <Link
-          to="/share-your-story"
-          search={{ code }}
-          className="inline-block text-[11px] text-primary underline underline-offset-2 hover:text-primary/80"
-        >
-          Want to share more publicly? →
-        </Link>
       </div>
     );
   }
@@ -363,7 +357,7 @@ function FeedbackBlock({
       <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
         {copy.feedbackPrompt}
       </p>
-      <div className="mt-1 flex justify-center gap-0.5">
+      <div className="mt-1 flex justify-center">
         {[1, 2, 3, 4, 5].map((n) => {
           const active = (hover || rating) >= n;
           return (
@@ -377,7 +371,7 @@ function FeedbackBlock({
                 setRating(n);
                 setShowComment(true);
               }}
-              className="p-0.5"
+              className="p-2"
             >
               <Star
                 className={`h-6 w-6 transition-colors ${
@@ -398,16 +392,15 @@ function FeedbackBlock({
             className="min-h-12 resize-none text-xs"
           />
           <label className="flex items-start gap-2 text-[11px] text-muted-foreground">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={sharePublicly}
-              onChange={(e) => setSharePublicly(e.target.checked)}
+              onCheckedChange={(v) => setSharePublicly(v === true)}
               className="mt-0.5"
             />
             <span>Share my story publicly on the Sans Sucre site (with my name).</span>
           </label>
           {sharePublicly && (
-            <div className="space-y-1.5 rounded-lg border border-primary/15 bg-primary/5 p-2">
+            <div className="space-y-2 rounded-lg border border-primary/15 bg-primary/5 p-3">
               <label className="block text-[11px] text-muted-foreground">
                 Where you're from (optional)
               </label>
@@ -433,25 +426,28 @@ function FeedbackBlock({
                 }}
               />
               {photoPreview && (
-                <img src={photoPreview} alt="" className="h-16 w-16 rounded-md border object-cover" />
+                <div className="space-y-1">
+                  <img src={photoPreview} alt="" className="h-20 w-20 rounded-md border object-cover" />
+                  {photo?.name && (
+                    <p className="truncate text-[10px] text-muted-foreground">{photo.name}</p>
+                  )}
+                </div>
               )}
             </div>
           )}
           <Button onClick={submit} disabled={submitting || rating < 1} size="sm" className="w-full h-8 text-xs">
             {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : copy.feedbackSubmit}
           </Button>
-          {!sharePublicly && (
-            <p className="text-center text-[10px] text-muted-foreground">
-              Or{" "}
-              <Link
-                to="/share-your-story"
-                search={{ code }}
-                className="text-primary underline underline-offset-2"
-              >
-                share a fuller story publicly →
-              </Link>
-            </p>
-          )}
+          <p className="text-center text-[10px] text-muted-foreground">
+            Or{" "}
+            <Link
+              to="/share-your-story"
+              search={{ code }}
+              className="text-primary underline underline-offset-2"
+            >
+              share a fuller story publicly →
+            </Link>
+          </p>
         </div>
       )}
     </div>
