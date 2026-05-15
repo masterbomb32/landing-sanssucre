@@ -484,6 +484,16 @@ export type Database = {
         }
         Returns: string
       }
+      submit_testimonial_public: {
+        Args: {
+          p_name: string
+          p_photo_url: string
+          p_quote: string
+          p_rating: number
+          p_source: string
+        }
+        Returns: string
+      }
       unredeem_signup: {
         Args: { p_code: string; p_window_seconds?: number }
         Returns: {
