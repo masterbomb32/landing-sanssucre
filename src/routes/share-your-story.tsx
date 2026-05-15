@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, Star, ShieldCheck } from "lucide-react";
+import { Loader2, Check, Star, ShieldCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { submitPublicStory, fetchSignupForCode } from "@/server/redeem.functions";
 
@@ -130,12 +130,6 @@ function ShareYourStoryPage() {
           words (and photo) on our site.
         </p>
 
-        {verified && !done && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-            <ShieldCheck className="h-3.5 w-3.5" /> Verified visit
-          </div>
-        )}
-
         {done ? (
           <div className="mt-8 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
             <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
@@ -153,10 +147,15 @@ function ShareYourStoryPage() {
             </Link>
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="mt-8 space-y-5 rounded-2xl border bg-card p-6 shadow-sm">
+          <form onSubmit={onSubmit} className="mt-6 space-y-5 rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
+            {verified && (
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                <ShieldCheck className="h-3.5 w-3.5" /> Verified visit
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Your rating</Label>
-              <div className="flex gap-1">
+              <div className="-mx-1.5 flex">
                 {[1, 2, 3, 4, 5].map((n) => {
                   const active = (hover || rating) >= n;
                   return (
@@ -167,7 +166,7 @@ function ShareYourStoryPage() {
                       onMouseEnter={() => setHover(n)}
                       onMouseLeave={() => setHover(0)}
                       onClick={() => setRating(n)}
-                      className="p-0.5"
+                      className="p-2.5"
                     >
                       <Star
                         className={`h-7 w-7 transition-colors ${
@@ -203,7 +202,9 @@ function ShareYourStoryPage() {
                 required
                 maxLength={1000}
               />
-              <p className="text-xs text-muted-foreground">{quote.length}/1000</p>
+              {quote.length > 0 && (
+                <p className="text-xs text-muted-foreground">{quote.length}/1000</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="source">
@@ -222,10 +223,18 @@ function ShareYourStoryPage() {
                 Add a photo of yourself or your Sans Sucre treat{" "}
                 <span className="text-muted-foreground">(optional, max 5MB)</span>
               </Label>
-              <Input
+              <label
+                htmlFor="photo"
+                className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-input bg-background px-4 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="truncate">{photo ? photo.name : "Choose a photo"}</span>
+              </label>
+              <input
                 id="photo"
                 type="file"
                 accept="image/*"
+                className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
                   setPhoto(file);
@@ -243,7 +252,7 @@ function ShareYourStoryPage() {
                 </div>
               )}
             </div>
-            <Button type="submit" size="lg" className="w-full" disabled={submitting}>
+            <Button type="submit" size="lg" className="w-full" disabled={submitting || rating < 1}>
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit my story"}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
