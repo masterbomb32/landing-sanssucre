@@ -51,6 +51,58 @@ export const fetchFeedbackStatus = createServerFn({ method: "GET" })
     return { exists: true, hasFeedback: !!fb };
   });
 
+const PrefillSchema = z.object({ code: z.string().trim().min(8).max(64) });
+
+export const fetchSignupForCode = createServerFn({ method: "GET" })
+  .inputValidator((input: unknown) => PrefillSchema.parse(input))
+  .handler(async ({ data }) => {
+    const { data: signup } = await supabaseAdmin
+      .from("signups")
+      .select("id,name,redeemed_at")
+      .eq("redemption_code", data.code)
+      .maybeSingle();
+    if (!signup) return { exists: false as const };
+    const { data: existing } = await supabaseAdmin
+      .from("testimonials")
+      .select("id")
+      .eq("signup_id", signup.id)
+      .maybeSingle();
+    return {
+      exists: true as const,
+      name: signup.name as string,
+      redeemed: !!signup.redeemed_at,
+      hasSubmission: !!existing,
+    };
+  });
+
+const PublicStorySchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  quote: z.string().trim().min(5).max(1000),
+  rating: z.number().int().min(1).max(5),
+  source: z.string().trim().max(100).optional().or(z.literal("").transform(() => undefined)),
+  photo_url: z.string().trim().max(500).optional().or(z.literal("").transform(() => undefined)),
+});
+
+export const submitPublicStory = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => PublicStorySchema.parse(input))
+  .handler(async ({ data }) => {
+    const { error } = await supabaseAdmin.rpc("submit_testimonial_public", {
+      p_name: data.name,
+      p_quote: data.quote,
+      p_rating: data.rating,
+      p_source: data.source ?? "",
+      p_photo_url: data.photo_url ?? "",
+    });
+    if (error) {
+      const msg = `${error.message ?? ""} ${error.details ?? ""} ${error.hint ?? ""}`;
+      if (msg.includes("INVALID_NAME")) throw new Error("INVALID_NAME");
+      if (msg.includes("INVALID_QUOTE")) throw new Error("INVALID_QUOTE");
+      if (msg.includes("INVALID_RATING")) throw new Error("INVALID_RATING");
+      throw new Error("Could not submit. Please try again.");
+    }
+    return { ok: true };
+  });
+
 // ---- Offline support: prefetch unredeemed codes for the staff station ----
 
 const PrefetchSchema = z.object({ pin: z.string().min(4).max(6) });
