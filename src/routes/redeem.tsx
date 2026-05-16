@@ -57,6 +57,9 @@ function RedeemStation() {
   const [manualCode, setManualCode] = useState("");
   const [result, setResult] = useState<Result | null>(null);
   const [todayCount, setTodayCount] = useState<number | null>(null);
+  const [todayList, setTodayList] = useState<
+    { id: string; name: string; reward_choice: string; redeemed_at: string; redemption_code: string }[]
+  >([]);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [paused, setPaused] = useState(false);
   const [undoSecondsLeft, setUndoSecondsLeft] = useState<number | null>(null);
@@ -175,11 +178,23 @@ function RedeemStation() {
 
   // Today's count
   const loadCount = useCallback(async () => {
-    const { count } = await supabase
-      .from("signups")
-      .select("id", { count: "exact", head: true })
-      .gte("redeemed_at", manilaStartOfTodayISO());
+    const since = manilaStartOfTodayISO();
+    const [{ count }, { data }] = await Promise.all([
+      supabase
+        .from("signups")
+        .select("id", { count: "exact", head: true })
+        .gte("redeemed_at", since),
+      supabase
+        .from("signups")
+        .select("id,name,reward_choice,redeemed_at,redemption_code")
+        .gte("redeemed_at", since)
+        .order("redeemed_at", { ascending: false })
+        .limit(20),
+    ]);
     setTodayCount(count ?? 0);
+    setTodayList(
+      (data ?? []).filter((r) => !!r.redeemed_at) as unknown as typeof todayList,
+    );
   }, []);
 
   useEffect(() => {
