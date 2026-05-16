@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/select";
 import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions";
 import { getCountryBreakdown } from "@/server/dashboard.functions";
+import { downloadCsv, csvDate } from "@/lib/csv";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
@@ -99,10 +101,23 @@ function Dashboard() {
   const [editing, setEditing] = useState<Signup | null>(null);
   const [range, setRange] = useState<"today" | "7d" | "30d" | "all">("all");
   const [countries, setCountries] = useState<{ country: string; visitors: number }[]>([]);
+  const [hideVoided, setHideVoided] = useState<boolean>(() => {
+    if (typeof window === "undefined") return true;
+    const v = window.localStorage.getItem("admin:hideVoided");
+    return v === null ? true : v === "1";
+  });
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "redeemed" | "voided">("all");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
   const updateSignupFn = useServerFn(updateSignup);
   const voidSignupFn = useServerFn(voidSignup);
   const unvoidSignupFn = useServerFn(unvoidSignup);
   const countryFn = useServerFn(getCountryBreakdown);
+
+  useEffect(() => {
+    if (typeof window !== "undefined")
+      window.localStorage.setItem("admin:hideVoided", hideVoided ? "1" : "0");
+  }, [hideVoided]);
 
   const rangeBounds = useMemo(() => {
     const now = new Date();
@@ -180,15 +195,20 @@ function Dashboard() {
   const filtered = useMemo(() => {
     if (!rows) return [];
     const s = q.trim().toLowerCase();
-    if (!s) return rows;
-    return rows.filter(
-      (r) =>
+    return rows.filter((r) => {
+      if (hideVoided && r.voided_at) return false;
+      if (statusFilter === "active" && (r.redeemed_at || r.voided_at)) return false;
+      if (statusFilter === "redeemed" && !r.redeemed_at) return false;
+      if (statusFilter === "voided" && !r.voided_at) return false;
+      if (!s) return true;
+      return (
         r.name.toLowerCase().includes(s) ||
         r.mobile.toLowerCase().includes(s) ||
         (r.email ?? "").toLowerCase().includes(s) ||
-        r.redemption_code.toLowerCase().includes(s),
-    );
-  }, [rows, q]);
+        r.redemption_code.toLowerCase().includes(s)
+      );
+    });
+  }, [rows, q, hideVoided, statusFilter]);
 
   const stats = useMemo(() => {
     const all = (rows ?? []).filter((r) => !r.voided_at);
@@ -245,23 +265,77 @@ function Dashboard() {
 
   const exportCsv = () => {
     const list = filtered;
-    const header = ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at", "voided_at", "void_reason"];
-    const lines = [header.join(",")];
-    for (const r of list) {
-      const reward = getReward(r.reward_choice)?.title ?? r.reward_choice;
-      lines.push(
-        [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? "", r.voided_at ?? "", r.void_reason ?? ""]
-          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-          .join(","),
-      );
+    const suffix = statusFilter === "all" ? "" : `-${statusFilter}`;
+    downloadCsv(
+      `sanssucre-signups${suffix}-${csvDate()}.csv`,
+      ["created_at", "name", "mobile", "email", "reward", "code", "redeemed_at", "voided_at", "void_reason"],
+      list.map((r) => {
+        const reward = getReward(r.reward_choice)?.title ?? r.reward_choice;
+        return [r.created_at, r.name, r.mobile, r.email ?? "", reward, r.redemption_code, r.redeemed_at ?? "", r.voided_at ?? "", r.void_reason ?? ""];
+      }),
+    );
+  };
+
+  const exportTestimonials = async () => {
+    const { data } = await supabase
+      .from("testimonials")
+      .select("name,rating,quote,source,published,comment_only,created_at")
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    downloadCsv(
+      `sanssucre-testimonials-${csvDate()}.csv`,
+      ["created_at", "name", "rating", "quote", "source", "published", "comment_only"],
+      (data ?? []).map((r) => [r.created_at, r.name, r.rating ?? "", r.quote ?? "", r.source ?? "", r.published ? "yes" : "no", r.comment_only ? "yes" : "no"]),
+    );
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelected(new Set());
+
+  const bulkVoid = async () => {
+    const reason = window.prompt(`Void ${selected.size} signups — reason?`);
+    if (!reason || !reason.trim()) return;
+    setBulkBusy(true);
+    let ok = 0;
+    let fail = 0;
+    for (const id of selected) {
+      try {
+        await voidSignupFn({ data: { id, reason: reason.trim() } });
+        ok++;
+      } catch {
+        fail++;
+      }
     }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sanssucre-signups-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    setBulkBusy(false);
+    clearSelection();
+    toast.success(`Voided ${ok}${fail ? ` · ${fail} failed` : ""}.`);
+    load();
+  };
+
+  const bulkRestore = async () => {
+    setBulkBusy(true);
+    let ok = 0;
+    let fail = 0;
+    for (const id of selected) {
+      try {
+        await unvoidSignupFn({ data: { id } });
+        ok++;
+      } catch {
+        fail++;
+      }
+    }
+    setBulkBusy(false);
+    clearSelection();
+    toast.success(`Restored ${ok}${fail ? ` · ${fail} failed` : ""}.`);
+    load();
   };
 
   const markRedeemed = async (code: string) => {
@@ -484,16 +558,65 @@ function Dashboard() {
             className="pl-9"
           />
         </div>
-        <Button variant="outline" onClick={exportCsv}>
-          <Download className="h-4 w-4" /> Export CSV
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            size="sm"
+            variant={hideVoided ? "default" : "outline"}
+            onClick={() => setHideVoided((v) => !v)}
+          >
+            {hideVoided ? "Voided hidden" : "Voided visible"}
+          </Button>
+          {(["all", "active", "redeemed", "voided"] as const).map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={statusFilter === s ? "default" : "outline"}
+              onClick={() => setStatusFilter(s)}
+            >
+              {s === "all" ? "All" : s[0].toUpperCase() + s.slice(1)}
+            </Button>
+          ))}
+          <Button variant="outline" size="sm" onClick={exportCsv}>
+            <Download className="h-4 w-4" /> Signups
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportTestimonials}>
+            <Download className="h-4 w-4" /> Testimonials
+          </Button>
+        </div>
       </div>
+
+      {selected.size > 0 && (
+        <div className="sticky top-2 z-10 mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card px-4 py-3 shadow-sm">
+          <span className="text-sm font-medium">{selected.size} selected</span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={clearSelection} disabled={bulkBusy}>
+              Clear
+            </Button>
+            <Button size="sm" variant="outline" disabled={bulkBusy} onClick={bulkRestore}>
+              <RotateCcw className="h-3.5 w-3.5" /> Restore
+            </Button>
+            <Button size="sm" variant="destructive" disabled={bulkBusy} onClick={bulkVoid}>
+              {bulkBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Ban className="h-3.5 w-3.5" /> Void selected</>}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Table */}
       <div className="mt-4 overflow-x-auto rounded-xl border bg-card">
         <table className="w-full min-w-[720px] text-sm">
           <thead className="bg-secondary/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
+              <th className="px-3 py-3 w-8">
+                <Checkbox
+                  checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                  onCheckedChange={(v) => {
+                    if (v) setSelected(new Set(filtered.map((r) => r.id)));
+                    else clearSelection();
+                  }}
+                  aria-label="Select all"
+                />
+              </th>
               <th className="px-4 py-3">When</th>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Mobile</th>
@@ -508,6 +631,13 @@ function Dashboard() {
               const reward = getReward(r.reward_choice);
               return (
                 <tr key={r.id} className="border-t">
+                  <td className="px-3 py-3">
+                    <Checkbox
+                      checked={selected.has(r.id)}
+                      onCheckedChange={() => toggleSelected(r.id)}
+                      aria-label={`Select ${r.name}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatDateTime(r.created_at, { dateStyle: "medium", timeStyle: "short" })}
                   </td>
@@ -607,7 +737,7 @@ function Dashboard() {
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
                   No signups yet.
                 </td>
               </tr>
