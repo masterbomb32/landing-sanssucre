@@ -131,3 +131,34 @@ export const discardFaqDraft = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not discard draft.");
     return { ok: true };
   });
+
+export const getFaqsForAdmin = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("faqs")
+      .select(
+        "id,question,answer,sort_order,published,draft_question,draft_answer,has_draft",
+      )
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error("Could not load FAQs.");
+    return { faqs: data ?? [] };
+  });
+
+export const getFaqsForPreview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.supabase, context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("faqs")
+      .select("id,question,answer,draft_question,draft_answer,has_draft")
+      .order("sort_order", { ascending: true });
+    if (error) throw new Error("Could not load FAQ preview.");
+    const faqs = (data ?? []).map((r) => ({
+      id: r.id as string,
+      question: (r.has_draft && r.draft_question ? r.draft_question : r.question) as string,
+      answer: (r.has_draft && r.draft_answer ? r.draft_answer : r.answer) as string,
+    }));
+    return { faqs };
+  });
