@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { supabase } from "@/integrations/supabase/client";
 import {
   upsertFaq,
   deleteFaq,
   publishFaqDraft,
   discardFaqDraft,
+  getFaqsForAdmin,
 } from "@/server/faqs.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,15 +47,15 @@ function AdminFaqs() {
   const deleteFn = useServerFn(deleteFaq);
   const publishFn = useServerFn(publishFaqDraft);
   const discardFn = useServerFn(discardFaqDraft);
+  const loadFn = useServerFn(getFaqsForAdmin);
 
   const load = async () => {
-    const { data } = await supabase
-      .from("faqs")
-      .select(
-        "id,question,answer,sort_order,published,draft_question,draft_answer,has_draft",
-      )
-      .order("sort_order", { ascending: true });
-    setFaqs((data ?? []) as Faq[]);
+    try {
+      const res = await loadFn();
+      setFaqs((res.faqs ?? []) as Faq[]);
+    } catch {
+      setFaqs([]);
+    }
   };
 
   useEffect(() => {

@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { getFaqsForPreview } from "@/server/faqs.functions";
 import {
   Accordion,
   AccordionContent,
@@ -41,50 +43,39 @@ function FaqPage() {
   const { preview } = Route.useSearch();
   const [faqs, setFaqs] = useState<Faq[] | null>(null);
   const [previewActive, setPreviewActive] = useState(false);
+  const fetchPreview = useServerFn(getFaqsForPreview);
 
   useEffect(() => {
     let cancelled = false;
+    const loadPublished = async () => {
+      const { data } = await supabase
+        .from("faqs")
+        .select("id,question,answer")
+        .eq("published", true)
+        .order("sort_order", { ascending: true });
+      if (cancelled) return;
+      setPreviewActive(false);
+      setFaqs((data ?? []) as Faq[]);
+    };
     const run = async () => {
-      let isAdmin = false;
       if (preview === 1) {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const uid = sessionData.session?.user?.id;
-        if (uid) {
-          const { data: roleData } = await supabase.rpc("has_role", {
-            _user_id: uid,
-            _role: "admin",
-          });
-          isAdmin = roleData === true;
+        try {
+          const res = await fetchPreview();
+          if (cancelled) return;
+          setPreviewActive(true);
+          setFaqs(res.faqs as Faq[]);
+          return;
+        } catch {
+          // Not admin or not authed — silently fall back to published.
         }
       }
-      if (isAdmin) {
-        const { data } = await supabase
-          .from("faqs")
-          .select("id,question,answer,draft_question,draft_answer,has_draft,published")
-          .order("sort_order", { ascending: true });
-        if (cancelled) return;
-        const rows = (data ?? []).map((r) => ({
-          id: r.id as string,
-          question: (r.has_draft && r.draft_question ? r.draft_question : r.question) as string,
-          answer: (r.has_draft && r.draft_answer ? r.draft_answer : r.answer) as string,
-        }));
-        setPreviewActive(true);
-        setFaqs(rows);
-      } else {
-        const { data } = await supabase
-          .from("faqs")
-          .select("id,question,answer")
-          .eq("published", true)
-          .order("sort_order", { ascending: true });
-        if (cancelled) return;
-        setFaqs((data ?? []) as Faq[]);
-      }
+      await loadPublished();
     };
     run();
     return () => {
       cancelled = true;
     };
-  }, [preview]);
+  }, [preview, fetchPreview]);
 
   // FAQPage JSON-LD for SEO
   const jsonLd = {

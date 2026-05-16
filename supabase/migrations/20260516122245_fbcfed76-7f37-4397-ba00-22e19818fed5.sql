@@ -1,0 +1,1 @@
+REVOKE SELECT (draft_question, draft_answer, has_draft) ON public.faqs FROM anon, authenticated;
