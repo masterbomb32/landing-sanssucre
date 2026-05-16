@@ -539,6 +539,42 @@ function RedeemStation() {
                 </Button>
               </form>
             </div>
+
+            {todayList.length > 0 && (
+              <div className="mt-6 rounded-2xl border bg-card p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-display text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    Today's redemptions
+                  </h2>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {todayCount ?? todayList.length}
+                  </span>
+                </div>
+                <ul className="mt-2 divide-y">
+                  {todayList.map((r) => {
+                    const rw = getReward(r.reward_choice);
+                    return (
+                      <li key={r.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                        <div className="min-w-0">
+                          <div className="truncate font-medium">{r.name}</div>
+                          <div className="truncate text-xs text-muted-foreground">
+                            {rw ? `${rw.emoji} ${rw.title}` : r.reward_choice}
+                          </div>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-xs tabular-nums text-muted-foreground">
+                            {formatDateTime(r.redeemed_at, { timeStyle: "short" })}
+                          </div>
+                          <div className="font-mono text-[10px] text-muted-foreground">
+                            {r.redemption_code}
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
           </>
         )}
 
