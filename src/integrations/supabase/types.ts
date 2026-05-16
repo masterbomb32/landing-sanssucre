@@ -18,6 +18,9 @@ export type Database = {
         Row: {
           answer: string
           created_at: string
+          draft_answer: string | null
+          draft_question: string | null
+          has_draft: boolean
           id: string
           published: boolean
           question: string
@@ -27,6 +30,9 @@ export type Database = {
         Insert: {
           answer: string
           created_at?: string
+          draft_answer?: string | null
+          draft_question?: string | null
+          has_draft?: boolean
           id?: string
           published?: boolean
           question: string
@@ -36,6 +42,9 @@ export type Database = {
         Update: {
           answer?: string
           created_at?: string
+          draft_answer?: string | null
+          draft_question?: string | null
+          has_draft?: boolean
           id?: string
           published?: boolean
           question?: string
@@ -51,6 +60,7 @@ export type Database = {
           id: string
           signup_id: string
           source: string
+          unsubscribed_at: string | null
         }
         Insert: {
           created_at?: string
@@ -58,6 +68,7 @@ export type Database = {
           id?: string
           signup_id: string
           source?: string
+          unsubscribed_at?: string | null
         }
         Update: {
           created_at?: string
@@ -65,6 +76,7 @@ export type Database = {
           id?: string
           signup_id?: string
           source?: string
+          unsubscribed_at?: string | null
         }
         Relationships: []
       }

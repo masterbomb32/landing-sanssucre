@@ -173,3 +173,47 @@ export const unvoidSignup = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not restore signup.");
     return { ok: true };
   });
+
+// ---- Mailing list admin ----
+
+const UnsubSchema = z.object({ id: z.string().uuid() });
+
+export const unsubscribeMailing = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => UnsubSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (isAdmin !== true) throw new Error("NOT_ADMIN");
+    const { error } = await supabaseAdmin
+      .from("mailing_subscriptions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ unsubscribed_at: new Date().toISOString() } as any)
+      .eq("id", data.id);
+    if (error) throw new Error("Could not unsubscribe.");
+    return { ok: true };
+  });
+
+const ResubSchema = z.object({ id: z.string().uuid() });
+
+export const resubscribeMailing = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => ResubSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (isAdmin !== true) throw new Error("NOT_ADMIN");
+    const { error } = await supabaseAdmin
+      .from("mailing_subscriptions")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ unsubscribed_at: null } as any)
+      .eq("id", data.id);
+    if (error) throw new Error("Could not resubscribe.");
+    return { ok: true };
+  });
