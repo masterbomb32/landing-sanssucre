@@ -44,7 +44,7 @@ function MailingPage() {
       setRows([]);
       return;
     }
-    const list = (data ?? []) as unknown as Row[];
+    const list = (data ?? []) as Row[];
     setRows(list);
     const ids = Array.from(new Set(list.map((r) => r.signup_id).filter(Boolean)));
     if (ids.length > 0) {
