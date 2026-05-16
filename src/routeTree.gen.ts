@@ -21,8 +21,10 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as RedeemedCodeRouteImport } from './routes/redeemed.$code'
 import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
 import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
+import { Route as AdminMailingRouteImport } from './routes/admin.mailing'
 import { Route as AdminFaqsRouteImport } from './routes/admin.faqs'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 
 const ShareYourStoryRoute = ShareYourStoryRouteImport.update({
   id: '/share-your-story',
@@ -84,6 +86,11 @@ const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
   path: '/testimonials',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMailingRoute = AdminMailingRouteImport.update({
+  id: '/mailing',
+  path: '/mailing',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFaqsRoute = AdminFaqsRouteImport.update({
   id: '/faqs',
   path: '/faqs',
@@ -92,6 +99,11 @@ const AdminFaqsRoute = AdminFaqsRouteImport.update({
 const AdminCopyRoute = AdminCopyRouteImport.update({
   id: '/copy',
   path: '/copy',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
 
@@ -104,8 +116,10 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
   '/share-your-story': typeof ShareYourStoryRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -119,8 +133,10 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
   '/share-your-story': typeof ShareYourStoryRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -136,8 +152,10 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/redeem': typeof RedeemRoute
   '/share-your-story': typeof ShareYourStoryRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
   '/admin/faqs': typeof AdminFaqsRoute
+  '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/receipt/$code': typeof ReceiptCodeRoute
   '/redeemed/$code': typeof RedeemedCodeRoute
@@ -154,8 +172,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/redeem'
     | '/share-your-story'
+    | '/admin/audit'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/mailing'
     | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -169,8 +189,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/redeem'
     | '/share-your-story'
+    | '/admin/audit'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/mailing'
     | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -185,8 +207,10 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/redeem'
     | '/share-your-story'
+    | '/admin/audit'
     | '/admin/copy'
     | '/admin/faqs'
+    | '/admin/mailing'
     | '/admin/testimonials'
     | '/receipt/$code'
     | '/redeemed/$code'
@@ -292,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTestimonialsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/mailing': {
+      id: '/admin/mailing'
+      path: '/mailing'
+      fullPath: '/admin/mailing'
+      preLoaderRoute: typeof AdminMailingRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/faqs': {
       id: '/admin/faqs'
       path: '/faqs'
@@ -306,19 +337,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCopyRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
   AdminCopyRoute: typeof AdminCopyRoute
   AdminFaqsRoute: typeof AdminFaqsRoute
+  AdminMailingRoute: typeof AdminMailingRoute
   AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
   AdminCopyRoute: AdminCopyRoute,
   AdminFaqsRoute: AdminFaqsRoute,
+  AdminMailingRoute: AdminMailingRoute,
   AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -340,3 +382,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
