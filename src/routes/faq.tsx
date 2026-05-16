@@ -15,6 +15,9 @@ interface Faq {
 }
 
 export const Route = createFileRoute("/faq")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    preview: search.preview === "1" || search.preview === 1 ? 1 : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "FAQ — Sans Sucre" },
@@ -35,16 +38,53 @@ export const Route = createFileRoute("/faq")({
 });
 
 function FaqPage() {
+  const { preview } = Route.useSearch();
   const [faqs, setFaqs] = useState<Faq[] | null>(null);
+  const [previewActive, setPreviewActive] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("faqs")
-      .select("id,question,answer")
-      .eq("published", true)
-      .order("sort_order", { ascending: true })
-      .then(({ data }) => setFaqs((data ?? []) as Faq[]));
-  }, []);
+    let cancelled = false;
+    const run = async () => {
+      let isAdmin = false;
+      if (preview === 1) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const uid = sessionData.session?.user?.id;
+        if (uid) {
+          const { data: roleData } = await supabase.rpc("has_role", {
+            _user_id: uid,
+            _role: "admin",
+          });
+          isAdmin = roleData === true;
+        }
+      }
+      if (isAdmin) {
+        const { data } = await supabase
+          .from("faqs")
+          .select("id,question,answer,draft_question,draft_answer,has_draft,published")
+          .order("sort_order", { ascending: true });
+        if (cancelled) return;
+        const rows = (data ?? []).map((r) => ({
+          id: r.id as string,
+          question: (r.has_draft && r.draft_question ? r.draft_question : r.question) as string,
+          answer: (r.has_draft && r.draft_answer ? r.draft_answer : r.answer) as string,
+        }));
+        setPreviewActive(true);
+        setFaqs(rows);
+      } else {
+        const { data } = await supabase
+          .from("faqs")
+          .select("id,question,answer")
+          .eq("published", true)
+          .order("sort_order", { ascending: true });
+        if (cancelled) return;
+        setFaqs((data ?? []) as Faq[]);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [preview]);
 
   // FAQPage JSON-LD for SEO
   const jsonLd = {
@@ -59,6 +99,11 @@ function FaqPage() {
 
   return (
     <main className="min-h-screen bg-background px-5 py-12 sm:py-16">
+      {previewActive && (
+        <div className="fixed inset-x-0 top-0 z-50 bg-amber-500 px-4 py-2 text-center text-xs font-medium text-amber-950 shadow-md">
+          Preview mode — showing FAQ drafts (admin only)
+        </div>
+      )}
       <article className="mx-auto max-w-2xl space-y-8">
         <header>
           <Link to="/" className="text-sm text-primary hover:underline">
