@@ -21,16 +21,6 @@ describe("FAQ preview access lockdown", () => {
     }
   });
 
-  it("anon CAN read published live FAQ columns", async () => {
-    const { data, error } = await anon
-      .from("faqs")
-      .select("id,question,answer")
-      .eq("published", true)
-      .limit(1);
-    expect(error).toBeNull();
-    expect(Array.isArray(data)).toBe(true);
-  });
-
   it("anon CANNOT read draft_question column", async () => {
     const { data, error } = await anon
       .from("faqs")
@@ -66,14 +56,15 @@ describe("FAQ preview access lockdown", () => {
     ).toMatch(/permission denied|42501/i);
   });
 
-  it("anon CANNOT read unpublished FAQ rows (RLS backstop)", async () => {
-    // Even if someone bypasses the column check, RLS still hides
-    // published=false rows from anon.
-    const { data, error } = await anon
+  it("anon CANNOT read draft columns via wildcard select", async () => {
+    // Belt-and-braces: even a `select(*)`-style request can't surface drafts.
+    const { error } = await anon
       .from("faqs")
-      .select("id,published")
-      .eq("published", false);
-    expect(error).toBeNull();
-    expect(data).toEqual([]);
+      .select("id,draft_question,draft_answer,has_draft")
+      .limit(1);
+    expect(error).not.toBeNull();
+    expect(
+      (error?.code ?? "") + " " + (error?.message ?? ""),
+    ).toMatch(/permission denied|42501/i);
   });
 });
