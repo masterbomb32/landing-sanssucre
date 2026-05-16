@@ -36,8 +36,7 @@ function MailingPage() {
   const load = async () => {
     const { data, error } = await supabase
       .from("mailing_subscriptions")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .select("id,signup_id,email,source,created_at,unsubscribed_at" as any)
+      .select("id,signup_id,email,source,created_at,unsubscribed_at")
       .order("created_at", { ascending: false })
       .limit(2000);
     if (error) {
@@ -45,8 +44,9 @@ function MailingPage() {
       setRows([]);
       return;
     }
-    setRows((data ?? []) as unknown as Row[]);
-    const ids = Array.from(new Set((data ?? []).map((r) => (r as Row).signup_id).filter(Boolean)));
+    const list = (data ?? []) as unknown as Row[];
+    setRows(list);
+    const ids = Array.from(new Set(list.map((r) => r.signup_id).filter(Boolean)));
     if (ids.length > 0) {
       const { data: sd } = await supabase.from("signups").select("id,name").in("id", ids);
       const map: Record<string, string> = {};
