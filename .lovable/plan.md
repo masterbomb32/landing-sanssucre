@@ -1,42 +1,63 @@
-## Phase 6 — FAQ draft + preview
+# Tighten /faq preview access
 
-Schema already has `draft_question`, `draft_answer`, `has_draft` on `faqs`. Wire them into server fns, admin UI, and public page.
+## Problem
 
-### Server (`src/server/faqs.functions.ts`)
+Today's preview gating is client-side only. The deeper issue: RLS on `faqs` is row-level, and rows with `published = true` are readable by anon. The columns `draft_question`, `draft_answer`, `has_draft` live on those same rows — so anyone can run:
 
-- Extend `UpsertSchema` with optional `draft_question`, `draft_answer` (same length rules as live; `draft_answer` allows empty/null when clearing). Live `question`/`answer` remain required so existing rows always have a public version.
-- `upsertFaq`: when draft fields are provided and differ from live, set `has_draft = true`; when explicitly cleared (null), set both draft cols to null and `has_draft = false`.
-- New `publishFaqDraft({ id })`: copy `draft_question`/`draft_answer` → `question`/`answer`, null the drafts, set `has_draft = false`, bump `updated_at`. Admin-only.
-- New `discardFaqDraft({ id })`: null both drafts, `has_draft = false`. Admin-only.
-- All new fns follow existing `requireSupabaseAuth` + `assertAdmin` pattern, use `supabaseAdmin`.
+```
+supabase.from('faqs').select('draft_question,draft_answer').eq('published', true)
+```
 
-### Admin UI (`src/routes/admin.faqs.tsx`)
+and read in-progress drafts directly, regardless of `?preview=1`. The admin gate in `faq.tsx` is cosmetic.
 
-Per-row editor changes:
-- Add `draft_question`, `draft_answer`, `has_draft` to the `Faq` interface and the initial select.
-- Replace single Question/Answer fields with a two-column "Live | Draft" view on `sm:` (stacked on mobile). Live side is read-only (shows what `/faq` currently serves). Draft side is editable.
-- Editing the draft fields and clicking **Save draft** calls `upsertFaq` with the draft cols populated.
-- Show a "Draft pending" amber chip when `has_draft` is true.
-- Action buttons when `has_draft`: **Publish draft** (calls `publishFaqDraft`, then reloads), **Discard draft** (calls `discardFaqDraft` with confirm).
-- Keep existing Published/Draft visibility toggle, sort order, Delete.
-- "New FAQ" creates a row with live `question`/`answer` seeded as today (so the public page never breaks), `has_draft = false`.
+## Fix
 
-### Public preview (`src/routes/faq.tsx`)
+Move draft reads off the public PostgREST surface entirely and gate them through an admin-only server function.
 
-- Read `?preview=1` from search; if present AND viewer is admin (`has_role` check via `supabase.rpc("has_role", { _user_id: user.id, _role: "admin" })` after `getSession()`), fetch all FAQs incl. drafts and render `draft_question`/`draft_answer` when `has_draft`, otherwise the live values. Non-admins silently fall back to the published view.
-- Add a small fixed "Preview mode — showing drafts" banner at top when preview is active.
-- Admin FAQ editor gets a "Preview on /faq" link → `/faq?preview=1` (opens in new tab).
+### 1. Database migration — column-level lockdown
 
-### Out of scope (deferred)
+Revoke `SELECT` on the three draft columns from `anon` and `authenticated`. RLS still governs row visibility for `question`/`answer`/`published`/`sort_order`; drafts become invisible to PostgREST callers. `supabaseAdmin` (service role) bypasses this and keeps working for server functions.
 
-- `site_settings` draft mirroring — separate change; this PR is FAQ-only as requested.
-- Diff highlighting between live and draft.
-- Scheduled publish.
+```sql
+REVOKE SELECT (draft_question, draft_answer, has_draft)
+  ON public.faqs FROM anon, authenticated;
+```
 
-### Files touched
+No data migration, no RLS policy change.
 
-- edit `src/server/faqs.functions.ts` (extend upsert + 2 new fns)
-- edit `src/routes/admin.faqs.tsx` (dual-column editor, draft actions, preview link)
-- edit `src/routes/faq.tsx` (admin-gated preview mode + banner)
+### 2. New server function — `getFaqsForPreview`
 
-No new dependencies, no migrations (schema already in place).
+In `src/server/faqs.functions.ts`:
+- `requireSupabaseAuth` + `assertAdmin`.
+- Uses `supabaseAdmin` to select all FAQs (incl. unpublished) with draft columns, ordered by `sort_order`.
+- Returns merged shape: `{ id, question, answer, has_draft, published }` where question/answer fall back to live when draft is empty. Non-admin callers get `NOT_ADMIN` thrown.
+
+Also add `getFaqsForAdmin` (same auth, returns the raw rows incl. draft columns) so the admin editor still has draft fields to render — it can no longer rely on the anon client.
+
+### 3. `src/routes/faq.tsx` — remove client-side admin gate
+
+- Always fetch the public list via `supabase.from('faqs').select('id,question,answer').eq('published', true)`. No draft columns requested.
+- If `?preview=1`: call `useServerFn(getFaqsForPreview)` inside the effect. On success → render those rows + show the amber "Preview mode" banner. On failure (unauthenticated or non-admin) → silently fall back to the published list, no banner. This guarantees: even if a non-admin guesses the URL, the server rejects and they see the live page.
+- Drop the `has_role` RPC call from the client.
+
+### 4. `src/routes/admin.faqs.tsx` — read via server function
+
+- Replace the direct `supabase.from('faqs').select(...)` load with `useServerFn(getFaqsForAdmin)`. Same shape, draft columns included. Editing/saving/publishing already go through server functions, so no other changes needed.
+
+### 5. Verify
+
+- Run `supabase--read_query` as anon-like: confirm selecting `draft_question` from `faqs` errors with permission denied. (Admin client still works.)
+- Hit `/faq?preview=1` when logged out → published-only content, no banner.
+- Hit `/faq?preview=1` as admin → drafts visible, banner shown.
+- Admin FAQ editor still loads rows with draft fields.
+
+## Files
+
+- New migration: revoke draft column grants.
+- Edit `src/server/faqs.functions.ts`: add `getFaqsForPreview`, `getFaqsForAdmin`.
+- Edit `src/routes/faq.tsx`: server-fn-gated preview, remove client RPC.
+- Edit `src/routes/admin.faqs.tsx`: load via server function.
+
+## Out of scope
+
+Splitting drafts into a separate table, scheduled publish, diff highlighting, applying the same pattern to `site_settings`.
