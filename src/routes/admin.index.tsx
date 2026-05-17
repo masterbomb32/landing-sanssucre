@@ -40,8 +40,12 @@ import {
 } from "@/components/ui/select";
 import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions";
 import { getCountryBreakdown } from "@/server/dashboard.functions";
+import { notifyRedeem } from "@/server/redeem.functions";
 import { downloadCsv, csvDate } from "@/lib/csv";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useStaffPush } from "@/hooks/use-staff-push";
+import { sendTestStaffPush } from "@/lib/push.functions";
+import { Bell, BellOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
@@ -113,6 +117,10 @@ function Dashboard() {
   const voidSignupFn = useServerFn(voidSignup);
   const unvoidSignupFn = useServerFn(unvoidSignup);
   const countryFn = useServerFn(getCountryBreakdown);
+  const notifyRedeemFn = useServerFn(notifyRedeem);
+  const push = useStaffPush();
+  const sendTestFn = useServerFn(sendTestStaffPush);
+  const [testBusy, setTestBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined")
@@ -348,6 +356,7 @@ function Dashboard() {
       return;
     }
     toast.success("Marked as redeemed.");
+    notifyRedeemFn({ data: { code } }).catch(() => undefined);
     load();
   };
 
@@ -385,6 +394,75 @@ function Dashboard() {
           label="Redemption rate"
           value={stats.total ? `${Math.round((stats.redeemed / stats.total) * 100)}%` : "—"}
         />
+      </div>
+
+      {/* Notifications */}
+      <div className="mt-6 rounded-xl border bg-card p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 font-display text-sm uppercase tracking-[0.2em] text-muted-foreground">
+              <Bell className="h-4 w-4" /> Staff notifications
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {push.status === "subscribed"
+                ? "This device will receive push alerts for new signups and redemptions."
+                : push.status === "denied"
+                  ? "Notifications are blocked in your browser. Enable them in site settings, then reload."
+                  : push.status === "unsupported"
+                    ? "Push notifications aren't supported on this browser. On iPhone, install the site to your Home Screen first."
+                    : "Get a push alert on this device whenever a new signup or redemption happens."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {push.status === "subscribed" ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={testBusy}
+                  onClick={async () => {
+                    setTestBusy(true);
+                    try {
+                      const r = await sendTestFn();
+                      toast.success(`Test sent · ${r.sent} delivered${r.pruned ? `, ${r.pruned} pruned` : ""}`);
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Could not send test");
+                    } finally {
+                      setTestBusy(false);
+                    }
+                  }}
+                >
+                  {testBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : "Send test"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={push.busy}
+                  onClick={async () => {
+                    await push.disable();
+                    toast.success("Notifications disabled on this device.");
+                  }}
+                >
+                  <BellOff className="mr-1 h-3.5 w-3.5" /> Disable
+                </Button>
+              </>
+            ) : (
+              <Button
+                size="sm"
+                disabled={push.busy || push.status === "denied" || push.status === "unsupported"}
+                onClick={async () => {
+                  const r = await push.enable();
+                  if (r.ok) toast.success("Notifications enabled on this device.");
+                  else if (r.error === "permission") toast.error("Notification permission denied.");
+                  else if (r.error === "unsupported") toast.error("Not supported on this browser.");
+                  else toast.error("Could not enable notifications.");
+                }}
+              >
+                {push.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Bell className="mr-1 h-3.5 w-3.5" /> Enable notifications</>}
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Reward breakdown */}

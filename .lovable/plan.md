@@ -1,81 +1,99 @@
-# Sprint C — Final Batch
+# Stage 1 — Push notifications
 
-Five features remain from the Sprint C roadmap. All need at least one credential or external setup step from you. I'll pause at each gate, set things up once you provide what's needed, then continue.
+VAPID secrets are saved (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). `staff_push_subscriptions` table already exists. Plan below builds the full subscribe → store → fan-out flow plus a "Send test" button.
 
-## Stage 1 — Push notifications (staff alerts)
+## 1. Server functions — `src/lib/push.functions.ts`
 
-**Goal:** Logged-in staff get a web push when a new signup arrives or a code is redeemed.
+All require `requireSupabaseAuth`. New file (kept out of `src/server/` so the client can import the typed RPC stubs).
 
-- `staff_push_subscriptions` table already exists from Sprint C Day 1.
-- Add server fns in `src/server/push.functions.ts`:
-  - `registerStaffPush({ endpoint, p256dh, auth, userAgent })` — `requireSupabaseAuth`, upserts row keyed by `endpoint`.
-  - `unregisterStaffPush({ endpoint })` — admin-or-self delete.
-  - `sendStaffPush({ title, body, url })` — admin-only, fan-out using `web-push` over `fetch` (no Node addon — implement VAPID signing with WebCrypto so it works on Cloudflare Workers).
-- Hook `sendStaffPush` into:
-  - end of `submitSignup` → "New signup: {name} · {reward}" → `/admin`
-  - end of `redeem_signup` server fn wrapper → "Code redeemed: {name}" → `/admin`
-- Update `public/sw.js` to handle `push` and `notificationclick` events.
-- Add a "Enable notifications" toggle on `/admin/index.tsx` that calls `Notification.requestPermission()`, then `registration.pushManager.subscribe({ applicationServerKey: VAPID_PUBLIC_KEY })`, then `registerStaffPush`.
-- Expose `VITE_VAPID_PUBLIC_KEY` to the client (public by design); keep `VAPID_PRIVATE_KEY` + `VAPID_SUBJECT` server-only.
+- `getVapidPublicKey()` — returns `process.env.VAPID_PUBLIC_KEY`. Lets us avoid baking the key into the client bundle.
+- `registerStaffPush({ endpoint, p256dh, auth, userAgent })` — upsert into `staff_push_subscriptions` keyed by `endpoint`, set `user_id = auth.uid()`, refresh `last_seen_at`.
+- `unregisterStaffPush({ endpoint })` — delete row (RLS already allows self-or-admin).
+- `sendStaffPush({ title, body, url })` — admin-only (check `has_role`). Loads all rows via `supabaseAdmin`, signs a VAPID JWT with WebCrypto (P-256 ES256), POSTs an empty/encrypted payload to each `endpoint` with `Authorization: vapid t=<jwt>, k=<pub>`. 404/410 responses → delete the dead subscription. Returns `{ sent, failed, pruned }`.
+- `sendTestStaffPush()` — admin-only thin wrapper that calls `sendStaffPush` with a fixed "Test notification from Sans Sucre" payload.
 
-**Credential gate:** I generate the VAPID keypair locally and prompt you to paste the three secrets (`VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:owner@sanssucre.ph`).
+### `src/lib/push.server.ts` (server-only helper)
 
-## Stage 2 — Email confirmation on signup
+- `signVapidJwt(audience)` — builds ES256 JWT with `aud`, `exp` (now + 12h), `sub = VAPID_SUBJECT` using `crypto.subtle.importKey` on the base64url-decoded private key + `crypto.subtle.sign`.
+- `encryptPushPayload(payload, p256dh, auth)` — aes128gcm per RFC 8291. Uses WebCrypto only (works on Cloudflare Workers — no Node-only deps, no `web-push` npm package).
+- `fanOut(subs, payload)` — parallel `fetch` with TTL=60, urgency=normal headers.
 
-**Goal:** Customer receives a branded confirmation email immediately after signup, including their redemption code.
+Payload is JSON `{ title, body, url }` — the SW reads it in the `push` handler.
 
-- Trigger the email-domain setup dialog (you'll choose the sender subdomain, e.g. `notify.sanssucre.ph`).
-- Scaffold the shared email queue infrastructure (one-time).
-- Scaffold a transactional email server route + React Email template (`signup-confirmation.tsx`) with: greeting, reward, redemption code (mono-spaced), link to `/receipt/$code`, opening date, unsubscribe link.
-- Wire the send call into `submitSignup` (server fn) after the row insert. Failure to enqueue must NOT block signup — log and continue.
-- Add subject + body copy to `/admin/copy` so non-devs can edit (uses existing `site_settings` pattern, falls back to template default).
+## 2. Service worker — extend `public/sw.js`
 
-**Credential gate:** You complete the email-domain dialog and add the DNS records at your registrar. Setup continues automatically while DNS verifies — I'll keep building.
+Add (keep existing cache logic intact):
 
-## Stage 3 — SMS via Twilio
+```js
+self.addEventListener("push", (event) => {
+  let data = { title: "Sans Sucre", body: "", url: "/admin" };
+  try { if (event.data) data = { ...data, ...event.data.json() }; } catch {}
+  event.waitUntil(self.registration.showNotification(data.title, {
+    body: data.body,
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: { url: data.url },
+    tag: "sanssucre-staff",
+  }));
+});
 
-**Goal:** Same confirmation, sent as an SMS to the PH mobile they signed up with.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/admin";
+  event.waitUntil((async () => {
+    const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const c of all) if (c.url.includes(url)) return c.focus();
+    return self.clients.openWindow(url);
+  })());
+});
+```
 
-- Trigger the Twilio connector flow; you pick the account + verified sender number.
-- Add `src/server/sms.functions.ts` with `sendSignupSms(signupId)` that calls Twilio Messages API through the connector gateway (form-urlencoded, `+63` normalization already exists).
-- Hook into `submitSignup` next to the email call. Either channel failing is non-fatal; both are logged to `notification_log` (table already exists).
-- Add an admin guard: skip SMS if `mobile` failed validation or `voided_at` is set.
-- Recommend you turn on Twilio SMS Pumping Protection + Geo Permissions (PH only) after connecting.
+Bump `VERSION` to `v2` so old SWs upgrade.
 
-**Credential gate:** You complete the Twilio connector picker. No raw secrets needed — gateway handles it.
+## 3. Client hook — `src/hooks/use-staff-push.ts`
 
-## Stage 4 — Google Maps / Visit-us section
+- Reads `getVapidPublicKey` via `useServerFn` + `useQuery` (cached).
+- Exposes `{ permission, isSubscribed, isSupported, enable(), disable() }`.
+- `enable()`: `Notification.requestPermission()` → `navigator.serviceWorker.ready` → `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) })` → call `registerStaffPush`.
+- `disable()`: unsubscribe locally + call `unregisterStaffPush`.
+- Guards against SSR / unsupported browsers (iOS PWA-only check).
 
-**Goal:** Landing page section with embedded map, address, hours, "Get directions" deep links.
+## 4. Admin UI — `src/routes/admin.index.tsx`
 
-- Add `<VisitUsSection />` mounted on `/` between testimonials and FAQ.
-- Embedded Google Maps iframe (Maps Embed API — `key` is public, restrict by HTTP referrer to your domains).
-- Address + hours pulled from `site_settings` (new keys `address`, `hours_json`, `phone`) — editable in `/admin/copy`.
-- "Open in Google Maps" + "Open in Waze" + tap-to-call buttons.
-- JSON-LD `LocalBusiness` schema injected via route `head()`.
-- Footer gets address/phone too.
+New "Notifications" card:
+- Status pill: Off / Pending / On.
+- **Enable notifications** button → `enable()`.
+- **Disable** + **Send test notification** buttons (admin-only) once subscribed.
+- iOS hint: "Add to Home Screen first" if `standalone === false` on iOS Safari.
 
-**Credential gate:** Add `VITE_GOOGLE_MAPS_API_KEY` (Maps Embed API enabled, HTTP-referrer restricted to your two `*.lovable.app` URLs + your custom domain).
+Uses existing toast for success/error feedback.
 
-## Stage 5 — QA + v1.3 publish
+## 5. Auto-fire on key events
 
-- Run the dev-server log + security linter once.
-- Walk through landing → signup → email/SMS receipt → redeem → testimonial submit → admin push toast → admin moderation in the preview.
-- Lighthouse pass (mobile, the viewport you're previewing in): aim ≥90 on perf/accessibility/best-practices/SEO.
-- Update `Feature_Summary.md` to v1.3 status.
-- Suggest publishing the frontend changes.
+- `src/server/signup.functions.ts → submitSignup`: after the row insert, fire-and-forget `sendStaffPush({ title: "New signup", body: \`${name} · ${reward}\`, url: "/admin" })` wrapped in try/catch so push failures never break signup.
+- `src/server/redeem.functions.ts` (the server fn calling `redeem_signup`): same pattern with title "Code redeemed".
 
-## Out of scope (deferred to Sprint D)
+Both call the internal helper directly (not the protected serverFn) — extract `_fanOutStaffPush(payload)` from `push.functions.ts` into `push.server.ts` so unauth contexts can trigger it.
 
-Multi-device staff sync, custom date-range picker, waitlist + per-reward caps, EN/FIL i18n, staff leaderboard, daily ops digest, A/B reward copy, POS webhook, exit-intent modal, GA4 + Meta Pixel, per-route OG images, real product photography.
+## 6. Verification
 
-## Order of operations
+- Subscribe from `/admin` in preview (Chrome desktop).
+- Click "Send test notification" → notification appears, click takes you to `/admin`.
+- Submit a signup in another tab → admin tab gets push.
+- Redeem a code → admin tab gets push.
+- Check `staff_push_subscriptions` row created; force a 410 by manually deleting endpoint server-side and re-firing to confirm prune logic.
 
-1. Approve plan → I start Stage 1 code + ask for the 3 VAPID secrets.
-2. After secrets land → finish Stage 1, then open the email-domain dialog for Stage 2.
-3. After DNS submitted → scaffold email infra + templates, wire into signup.
-4. Trigger Twilio connector for Stage 3 → wire SMS.
-5. Ask for the Maps key for Stage 4 → build Visit-us section.
-6. QA + recommend publish.
+## Out of scope (deferred)
 
-I'll pause for your input at every credential gate; everything else proceeds without interruption.
+- Multi-device sync UI (list all your subscriptions, revoke individually).
+- Per-event toggles (some staff want signups but not redeems).
+- Quiet hours.
+- iOS Safari install prompt UI polish.
+
+## Order
+
+1. Approve plan.
+2. Write `push.server.ts` + `push.functions.ts` + extend SW.
+3. Add hook + admin card.
+4. Wire fan-out into signup + redeem.
+5. Manually verify with test button + a real signup.

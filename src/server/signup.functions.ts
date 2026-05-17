@@ -2,7 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { REWARDS } from "@/lib/rewards";
+import { REWARDS, getReward } from "@/lib/rewards";
+import { notifyStaffSilently } from "@/lib/push.functions";
 
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
 
@@ -105,6 +106,13 @@ export const createSignup = createServerFn({ method: "POST" })
             console.error("recordReferral error", e);
           }
         }
+        // Fire-and-forget push to staff. Never blocks signup.
+        const reward = getReward(data.rewardChoice);
+        notifyStaffSilently(
+          "New signup 🎉",
+          `${data.name} · ${reward?.title ?? data.rewardChoice}`,
+          "/admin",
+        );
         return { code: row.redemption_code, alreadyRegistered: false };
       }
 
