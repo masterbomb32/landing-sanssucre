@@ -1,5 +1,5 @@
-/* Sans Sucre staff station service worker — minimal precache + nav fallback. */
-const VERSION = "v1";
+/* Sans Sucre staff station service worker — precache + nav fallback + push. */
+const VERSION = "v2";
 const CACHE = `sanssucre-station-${VERSION}`;
 const NAV_SHELL = "/redeem";
 
@@ -63,4 +63,46 @@ self.addEventListener("fetch", (event) => {
       ),
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  let data = { title: "Sans Sucre", body: "", url: "/admin" };
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch (_e) {
+    try {
+      const txt = event.data && event.data.text();
+      if (txt) data.body = txt;
+    } catch (_e2) {}
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/favicon.ico",
+      badge: "/favicon.ico",
+      data: { url: data.url || "/admin" },
+      tag: "sanssucre-staff",
+      renotify: true,
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/admin";
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const c of all) {
+        if (c.url.includes(targetUrl)) {
+          await c.focus();
+          return;
+        }
+      }
+      await self.clients.openWindow(targetUrl);
+    })(),
+  );
 });
