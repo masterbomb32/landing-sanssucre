@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { notifyStaffSilently } from "@/lib/push.functions";
 
 const FeedbackSchema = z.object({
   code: z.string().trim().min(8).max(64),
@@ -196,4 +197,29 @@ export const redeemBatch = createServerFn({ method: "POST" })
       }
     }
     return { results };
+  });
+
+const NotifyRedeemSchema = z.object({
+  code: z.string().trim().min(8).max(64),
+  name: z.string().trim().max(100).optional(),
+});
+
+/**
+ * Lightweight server fn callable from any client after a successful redeem
+ * RPC call, so admins on other devices get a push.
+ */
+export const notifyRedeem = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => NotifyRedeemSchema.parse(input))
+  .handler(async ({ data }) => {
+    let name = data.name;
+    if (!name) {
+      const { data: row } = await supabaseAdmin
+        .from("signups")
+        .select("name")
+        .eq("redemption_code", data.code)
+        .maybeSingle();
+      name = row?.name ?? "Guest";
+    }
+    await notifyStaffSilently("Code redeemed ✅", `${name} · ${data.code}`, "/admin");
+    return { ok: true };
   });
