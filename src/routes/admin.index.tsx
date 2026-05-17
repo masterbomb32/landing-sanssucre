@@ -42,6 +42,9 @@ import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions
 import { getCountryBreakdown } from "@/server/dashboard.functions";
 import { downloadCsv, csvDate } from "@/lib/csv";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useStaffPush } from "@/hooks/use-staff-push";
+import { sendTestStaffPush } from "@/lib/push.functions";
+import { Bell, BellOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin/")({
   component: Dashboard,
@@ -113,6 +116,9 @@ function Dashboard() {
   const voidSignupFn = useServerFn(voidSignup);
   const unvoidSignupFn = useServerFn(unvoidSignup);
   const countryFn = useServerFn(getCountryBreakdown);
+  const push = useStaffPush();
+  const sendTestFn = useServerFn(sendTestStaffPush);
+  const [testBusy, setTestBusy] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined")
