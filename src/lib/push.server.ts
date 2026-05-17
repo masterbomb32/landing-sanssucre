@@ -62,7 +62,7 @@ export async function fanOutStaffPush(
           const res = await fetch(sub.endpoint, {
             method: req.method,
             headers: req.headers,
-            body: req.body,
+            body: req.body as BodyInit,
           });
           if (res.status === 404 || res.status === 410) {
             deadIds.push(sub.id);
