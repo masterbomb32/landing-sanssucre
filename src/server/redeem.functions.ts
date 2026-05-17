@@ -196,6 +196,14 @@ export const redeemBatch = createServerFn({ method: "POST" })
         results.push({ id: item.id, code, status: "error", message: errAny.message });
       }
     }
+    const okCount = results.filter((r) => r.status === "ok").length;
+    if (okCount > 0) {
+      notifyStaffSilently(
+        "Codes redeemed ✅",
+        okCount === 1 ? "1 code redeemed at station." : `${okCount} codes redeemed at station.`,
+        "/admin",
+      );
+    }
     return { results };
   });
 
