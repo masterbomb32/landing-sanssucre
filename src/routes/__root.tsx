@@ -7,21 +7,55 @@ import { siteCopy } from "@/lib/site-copy";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-6 py-16">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-60"
+        style={{
+          background:
+            "radial-gradient(ellipse at top, color-mix(in oklab, var(--rose) 45%, transparent), transparent 60%), radial-gradient(ellipse at bottom, color-mix(in oklab, var(--gold) 25%, transparent), transparent 65%)",
+        }}
+      />
+      <div className="hero-rise relative z-10 mx-auto max-w-lg text-center">
+        <p className="font-sans text-xs uppercase tracking-[0.32em] text-primary/80">
+          Sans Sucre · Pâtisserie
         </p>
-        <div className="mt-6">
+
+        <div className="mt-6 flex items-center justify-center gap-4 text-primary/70">
+          <span className="h-px w-12 bg-border" />
+          <span className="text-2xl" aria-hidden="true">✦</span>
+          <span className="h-px w-12 bg-border" />
+        </div>
+
+        <h1 className="mt-6 font-display text-7xl font-bold tracking-tight text-primary sm:text-8xl">
+          404
+        </h1>
+        <h2 className="mt-4 font-display text-2xl text-foreground sm:text-3xl">
+          This page is out of the oven.
+        </h2>
+        <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground sm:text-base">
+          The page you're looking for has wandered off — perhaps it stepped out for a
+          coffee. Let's get you back to something sweet.
+        </p>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
           >
-            Go home
+            Take me home
+          </Link>
+          <Link
+            to="/faq"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-border bg-background/60 px-6 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            Visit our FAQ
           </Link>
         </div>
+
+        <p className="mt-10 font-display text-xs uppercase tracking-[0.28em] text-muted-foreground">
+          Metro Supermarket · Alabang Town Center
+        </p>
       </div>
     </div>
   );
