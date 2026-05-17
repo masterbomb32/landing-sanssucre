@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { notifyStaffSilently } from "@/lib/push.functions";
+import { notifyStaffSilently } from "@/lib/push.server";
 
 const FeedbackSchema = z.object({
   code: z.string().trim().min(8).max(64),
