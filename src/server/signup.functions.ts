@@ -2,9 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { REWARDS } from "@/lib/rewards";
+import { REWARDS, getReward } from "@/lib/rewards";
 import { notifyStaffSilently } from "@/lib/push.functions";
-import { getReward } from "@/lib/rewards";
 
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
 
