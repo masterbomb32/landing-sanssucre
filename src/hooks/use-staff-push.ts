@@ -28,9 +28,7 @@ type Status = "idle" | "loading" | "subscribed" | "unsupported" | "denied";
 export function useStaffPush() {
   const [status, setStatus] = useState<Status>("idle");
   const [busy, setBusy] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | "default">(
-    typeof Notification !== "undefined" ? Notification.permission : "default",
-  );
+  const [permission, setPermission] = useState<NotificationPermission | "default">("default");
 
   const getKey = useServerFn(getVapidPublicKey);
   const registerFn = useServerFn(registerStaffPush);
