@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { REWARDS, getReward } from "@/lib/rewards";
-import { notifyStaffSilently } from "@/lib/push.functions";
+import { notifyStaffSilently } from "@/lib/push.server";
 
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
 

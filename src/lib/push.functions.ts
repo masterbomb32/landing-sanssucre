@@ -82,18 +82,3 @@ export const sendTestStaffPush = createServerFn({ method: "POST" })
     });
     return result;
   });
-
-/**
- * Internal: fire and forget. Never throws.
- */
-export async function notifyStaffSilently(
-  title: string,
-  body: string,
-  url: string = "/admin",
-) {
-  try {
-    await fanOutStaffPush({ title, body, url });
-  } catch (e) {
-    console.error("notifyStaffSilently", e);
-  }
-}
