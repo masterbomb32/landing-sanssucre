@@ -1,31 +1,35 @@
-## Problem
+# Sans Sucre Color Palette Rebrand
 
-`src/lib/push.functions.ts` is imported by client modules (`src/hooks/use-staff-push.ts`, `src/routes/admin.index.tsx`) to get RPC stubs for `getVapidPublicKey`, `registerStaffPush`, `unregisterStaffPush`, and `sendTestStaffPush`.
+Replace the current rose/cream patisserie palette with the official Sans Sucre brand palette from the attached reference.
 
-That file currently has a **top-level** `import { fanOutStaffPush } from "./push.server"`. `push.server.ts` imports `@/integrations/supabase/client.server` (service-role key). The TanStack import-protection plugin sees the server-only module reachable from a client bundle and aborts the production build at `src/lib/push.functions.ts:95:11`.
+## Brand colors (mapped to tokens)
 
-The previous fix (moving `notifyStaffSilently` into `push.server.ts`) didn't help because the static import of `push.server` from `push.functions.ts` is itself the leak.
+| Brand swatch | Hex | Role |
+|---|---|---|
+| Bright White | `#FBFAFA` | `--background`, `--card` |
+| Neutral Gray | `#B5B1AF` | `--muted-foreground`, `--border`, body dividers |
+| Deep Sage Green | `#8FA293` | `--primary` (main brand), foreground accents |
+| Sage Green | `#BDCBBA` | `--secondary`, `--muted` |
+| Soft Coral | `#F9C5B7` | `--accent` (warm highlight) |
+| Classic Gold | `#E9C997` | `--gold` (highlights, hover) |
+| Premium Gold | `#C19B5A` | `--gold-deep` (elevated accents, CTA underlines) |
+| Foreground text | dark charcoal-sage | derived from Deep Sage |
 
-## Fix
+## Changes (single file: `src/styles.css`)
 
-In `src/lib/push.functions.ts`, remove the top-level `import { fanOutStaffPush } from "./push.server"` and instead dynamically import it inside the `sendTestStaffPush` handler:
+1. **Replace `:root` token values** with oklch conversions of the brand hexes above. Primary becomes Deep Sage instead of deep rose. Accent becomes Soft Coral. Background becomes Bright White (cool, not warm cream).
+2. **Update the custom token block** in `@theme inline`:
+   - Remove `--color-rose`, `--color-rose-deep`, `--color-cream` (rose-era leftovers).
+   - Add `--color-sage`, `--color-sage-deep`, `--color-coral`, `--color-gold`, `--color-gold-deep`.
+3. **Update `.dark` mode** to a sage-charcoal scheme (deep sage background, coral/gold accents) so dark theme stays on-brand instead of generic blue.
+4. **Keep typography** (Playfair Display SC + PT Sans) — only colors change.
 
-```ts
-.handler(async ({ context }) => {
-  await assertAdmin(context.userId);
-  const { fanOutStaffPush } = await import("./push.server");
-  return fanOutStaffPush({
-    title: "Sans Sucre test 🍰",
-    body: "Push notifications are working.",
-    url: "/admin",
-  });
-})
-```
+## Component cleanup
 
-Dynamic imports inside `.handler()` are only evaluated server-side, so the import-protection plugin no longer sees `client.server` reachable from the client bundle.
+Grep for any hardcoded `rose`, `cream`, `rose-deep` Tailwind utility usages introduced earlier and rename to the new `sage`/`coral`/`gold` tokens. No structural/layout changes.
 
-No other files need changes — `redeem.functions.ts` and `signup.functions.ts` already import from `@/lib/push.server` directly (server-only modules importing server-only modules is fine).
+## Out of scope
 
-## Verification
-
-After the change, the production build should complete without the `src/lib/push.functions.ts:95:11` import-protection error.
+- No layout, copy, component, or routing changes.
+- The push-notifications build fix from prior turns stays as-is.
+- Resuming roadmap/dev work is paused per the user's instruction until this rebrand lands.
