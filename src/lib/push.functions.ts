@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { fanOutStaffPush } from "./push.server";
 
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin.rpc("has_role", {
@@ -75,6 +74,7 @@ export const sendTestStaffPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
+    const { fanOutStaffPush } = await import("./push.server");
     const result = await fanOutStaffPush({
       title: "Sans Sucre test 🍰",
       body: "Push notifications are working.",
