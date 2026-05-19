@@ -13,7 +13,7 @@ function NotFoundComponent() {
         className="pointer-events-none absolute inset-0 opacity-60"
         style={{
           background:
-            "radial-gradient(ellipse at top, color-mix(in oklab, var(--rose) 45%, transparent), transparent 60%), radial-gradient(ellipse at bottom, color-mix(in oklab, var(--gold) 25%, transparent), transparent 65%)",
+            "radial-gradient(ellipse at top, color-mix(in oklab, var(--coral) 40%, transparent), transparent 60%), radial-gradient(ellipse at bottom, color-mix(in oklab, var(--gold) 30%, transparent), transparent 65%)",
         }}
       />
       <div className="hero-rise relative z-10 mx-auto max-w-lg text-center">
