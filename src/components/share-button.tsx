@@ -95,7 +95,7 @@ export function ShareButton({
             <div className="flex items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
               <span className="flex-1 truncate text-sm text-muted-foreground">{shareUrl}</span>
               <Button size="sm" variant="ghost" onClick={copyLink}>
-                {copied ? <Check className="text-rose-deep" /> : <Copy />}
+                {copied ? <Check className="text-sage-deep" /> : <Copy />}
               </Button>
             </div>
             <div className="grid grid-cols-2 gap-2">
