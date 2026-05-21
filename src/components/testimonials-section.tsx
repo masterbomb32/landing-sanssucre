@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,9 +12,9 @@ interface Testimonial {
 
 function Stars() {
   return (
-    <div className="flex items-center gap-0.5 text-gold-deep" aria-hidden>
+    <div className="flex items-center gap-0.5 text-primary-foreground" aria-hidden>
       {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
+        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
           <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
         </svg>
       ))}
@@ -22,11 +22,13 @@ function Stars() {
   );
 }
 
-function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
-  const initial = t.name.slice(0, 1).toUpperCase();
+const cardShell = "snap-center overflow-hidden rounded-[2rem] bg-sage shadow-sm";
+const cardSize = "w-[15.75rem] flex-none sm:w-[16.75rem] lg:w-[calc((100%_-_4.5rem)/4)]";
+
+function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   return (
-    <article className="group flex min-h-[7.25rem] gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
-      <div className="relative h-12 w-12 flex-none overflow-hidden rounded-md bg-secondary">
+    <article className={`${cardShell} ${cardSize}`}>
+      <div className="relative h-32 overflow-hidden rounded-t-[1.6rem] bg-secondary sm:h-[8.5rem] lg:h-32">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -34,28 +36,27 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
             loading={eager ? "eager" : "lazy"}
             decoding="async"
             fetchPriority={eager ? "high" : "auto"}
-            width={112}
-            height={112}
-            className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+            width={420}
+            height={260}
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-secondary">
-            <span className="font-display text-lg font-bold text-primary/70">{initial}</span>
+          <div className="flex h-full w-full items-center justify-center bg-primary/15">
+            <span className="font-display text-5xl font-bold text-primary/70">{t.name.slice(0, 1).toUpperCase()}</span>
           </div>
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate font-display text-sm font-bold leading-tight">{t.name}</h3>
-            {t.source && <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t.source}</p>}
-          </div>
-          <Stars />
-        </div>
-        <blockquote className="mt-2 line-clamp-2 text-sm leading-snug text-foreground/80" title={t.quote ?? undefined}>
+      <div className="flex h-[11.25rem] flex-col px-3 pb-5 pt-2.5 sm:h-[11.75rem] sm:px-3.5">
+        <Stars />
+        <span className="mt-2 font-display text-lg leading-none text-primary-foreground">“</span>
+        <blockquote className="line-clamp-4 font-display text-[13px] font-bold italic leading-[1.18] text-foreground/65" title={t.quote ?? undefined}>
           “{t.quote}”
         </blockquote>
+        <div className="mt-auto min-w-0 pt-2">
+          <h3 className="truncate text-sm font-medium leading-tight text-primary-foreground">{t.name}</h3>
+          {t.source && <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-primary-foreground/75">{t.source}</p>}
+        </div>
       </div>
     </article>
   );
@@ -63,21 +64,21 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
 
 function ShareYourStoryCard() {
   return (
-    <article className="group flex h-full min-h-[15.5rem] flex-col justify-between rounded-lg border border-primary/30 bg-primary p-5 text-primary-foreground shadow-sm sm:p-6">
+    <article className={`${cardShell} ${cardSize} flex min-h-[19.5rem] flex-col justify-between p-5 text-primary-foreground sm:min-h-[20.5rem] lg:min-h-[19.25rem]`}>
       <div>
-        <p className="font-display text-[10px] uppercase tracking-[0.3em] text-gold">Your turn</p>
-        <h3 className="mt-3 max-w-md font-display text-2xl font-bold leading-tight">
-        Your Sans Sucre moment belongs here.
+        <p className="font-display text-[10px] uppercase tracking-[0.3em] text-primary-foreground/80">Your turn</p>
+        <h3 className="mt-4 font-display text-2xl font-bold leading-tight">
+          Share your own story.
         </h3>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-primary-foreground/85">
+        <p className="mt-4 text-sm leading-relaxed text-foreground/65">
           Share a photo, a few words, or a favorite treat from opening day.
         </p>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <Link
           to="/share-your-story"
-          className="inline-flex h-10 items-center justify-center rounded-full bg-gold px-5 text-sm font-semibold text-foreground shadow-sm transition-transform motion-safe:group-hover:translate-x-0.5"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-primary-foreground px-5 text-sm font-semibold text-foreground shadow-sm transition-transform motion-safe:hover:translate-x-0.5"
         >
           Share your story →
         </Link>
@@ -86,9 +87,21 @@ function ShareYourStoryCard() {
   );
 }
 
+function PromptCard({ title, text }: { title: string; text: string }) {
+  return (
+    <article className={`${cardShell} ${cardSize} flex min-h-[19.5rem] flex-col justify-end p-5 text-primary-foreground sm:min-h-[20.5rem] lg:min-h-[19.25rem]`}>
+      <Stars />
+      <span className="mt-3 font-display text-lg leading-none text-primary-foreground">“</span>
+      <p className="font-display text-[13px] font-bold italic leading-[1.18] text-foreground/65">{text}</p>
+      <h3 className="mt-8 text-sm font-medium leading-tight text-primary-foreground">{title}</h3>
+    </article>
+  );
+}
+
 export function TestimonialsSection() {
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,7 +125,19 @@ export function TestimonialsSection() {
     };
   }, []);
 
-  const visible = items.slice(0, 4);
+  const visible = items.slice(0, 8);
+  const prompts = [
+    { title: "Opening day memory", text: "Tell us what you tried first and what made it worth remembering." },
+    { title: "Favorite treat", text: "Share the pastry, bite, or box you would come back for again." },
+    { title: "Photo moment", text: "Add your sweetest Sans Sucre photo and a few words with it." },
+  ];
+  const scrollStories = (direction: "previous" | "next") => {
+    const track = trackRef.current;
+    if (!track) return;
+    const firstCard = track.querySelector<HTMLElement>("article");
+    const step = firstCard ? firstCard.offsetWidth + 24 : 300;
+    track.scrollBy({ left: direction === "next" ? step : -step, behavior: "smooth" });
+  };
 
   return (
     <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-14">
@@ -138,28 +163,38 @@ export function TestimonialsSection() {
       </div>
 
       {loaded && (
-        <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-[0.85fr_1.35fr]">
-          <ShareYourStoryCard />
+        <div className="relative sm:px-14 lg:px-16">
+          <button
+            type="button"
+            aria-label="Previous stories"
+            onClick={() => scrollStories("previous")}
+            className="absolute left-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-secondary sm:flex"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden>
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
 
-          {visible.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {visible.map((t, i) => (
-                <TestimonialChip key={t.id} t={t} eager={i < 4} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {[
-                "Opening day memory",
-                "Favorite treat",
-                "Photo moment",
-              ].map((prompt) => (
-                <div key={prompt} className="rounded-xl border border-border/70 bg-card p-4 text-sm font-medium text-foreground/80 shadow-sm">
-                  {prompt}
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            ref={trackRef}
+            className="flex flex-col items-center gap-6 overflow-visible sm:flex-row sm:items-stretch sm:gap-6 sm:overflow-x-auto sm:snap-x sm:snap-mandatory sm:pb-3 sm:[scrollbar-width:none] lg:overflow-hidden [&::-webkit-scrollbar]:hidden"
+          >
+            <ShareYourStoryCard />
+            {visible.length > 0
+              ? visible.map((t, i) => <TestimonialCard key={t.id} t={t} eager={i < 3} />)
+              : prompts.map((prompt) => <PromptCard key={prompt.title} title={prompt.title} text={prompt.text} />)}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Next stories"
+            onClick={() => scrollStories("next")}
+            className="absolute right-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-secondary sm:flex"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
       )}
     </section>
