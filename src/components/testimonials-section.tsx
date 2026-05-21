@@ -29,17 +29,17 @@ function Stars() {
   );
 }
 
-function TestimonialCard({ t }: { t: Testimonial }) {
+function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-xl">
+    <article className="group relative mx-auto flex w-full max-w-xs flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
       {/* Header band */}
-      <header className="flex items-center justify-between gap-3 bg-primary px-3 py-2 text-primary-foreground">
+      <header className="flex items-center justify-between gap-2 bg-primary px-2.5 py-1.5 text-primary-foreground">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-foreground/80">
+          <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-foreground/80">
             {initial}
           </span>
-          <span className="truncate font-display text-xs font-semibold tracking-wide">
+          <span className="truncate font-display text-[11px] font-semibold tracking-wide">
             {t.name}
           </span>
         </div>
@@ -47,33 +47,37 @@ function TestimonialCard({ t }: { t: Testimonial }) {
       </header>
 
       {/* Hero photo */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-secondary">
+      <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary">
         {t.photo_url ? (
           <img
             src={t.photo_url}
             alt={`Photo from ${t.name}`}
-            loading="lazy"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+            fetchPriority={eager ? "high" : "auto"}
+            width={400}
+            height={320}
             className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 via-gold/20 to-accent/30">
-            <span className="font-display text-6xl font-bold text-primary/60">{initial}</span>
+            <span className="font-display text-5xl font-bold text-primary/60">{initial}</span>
           </div>
         )}
       </div>
 
       {/* Quote panel */}
-      <div className="m-2 flex min-h-[7.5rem] flex-1 flex-col gap-2 rounded-xl bg-secondary/60 p-3.5">
-        <svg viewBox="0 0 24 24" className="h-4 w-4 flex-none text-gold-deep" fill="currentColor" aria-hidden>
+      <div className="m-1.5 flex min-h-[5.5rem] flex-1 flex-col gap-1.5 rounded-lg bg-secondary/60 p-2.5">
+        <svg viewBox="0 0 24 24" className="h-3 w-3 flex-none text-gold-deep" fill="currentColor" aria-hidden>
           <path d="M7.5 5C4.5 5 2 7.5 2 10.5V19h7v-8H5.5c0-1.7 1.3-3 3-3V5zm10 0c-3 0-5.5 2.5-5.5 5.5V19h7v-8H15c0-1.7 1.3-3 3-3V5z" />
         </svg>
         <blockquote
-          className="flex-1 font-display text-sm italic leading-snug text-foreground line-clamp-3"
+          className="flex-1 font-display text-[13px] italic leading-snug text-foreground line-clamp-3"
           title={t.quote ?? undefined}
         >
           {t.quote}
         </blockquote>
-        <figcaption className="text-[10px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+        <figcaption className="text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
           — {t.name}{t.source ? ` · ${t.source}` : ""}
         </figcaption>
       </div>
@@ -128,7 +132,7 @@ export function TestimonialsSection() {
   }
 
   return (
-    <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-16">
+    <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-14">
       {/* Editorial backdrop blocks */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-12 top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
@@ -148,19 +152,22 @@ export function TestimonialsSection() {
 
       <Carousel
         opts={{ align: "start", loop: items.length > 4 }}
-        className="w-full"
+        className="w-full px-2 sm:px-8"
       >
-        <CarouselContent className="-ml-4">
-          {items.map((t) => (
-            <CarouselItem key={t.id} className="basis-full pl-4 sm:basis-1/2 lg:basis-1/4">
-              <TestimonialCard t={t} />
+        <CarouselContent className="-ml-3">
+          {items.map((t, i) => (
+            <CarouselItem
+              key={t.id}
+              className="basis-full pl-3 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+            >
+              <TestimonialCard t={t} eager={i < 4} />
             </CarouselItem>
           ))}
         </CarouselContent>
-        {items.length > 4 && (
+        {items.length > 1 && (
           <>
-            <CarouselPrevious className="hidden sm:flex -left-4 lg:-left-6" />
-            <CarouselNext className="hidden sm:flex -right-4 lg:-right-6" />
+            <CarouselPrevious className="hidden sm:flex left-0" />
+            <CarouselNext className="hidden sm:flex right-0" />
           </>
         )}
       </Carousel>
