@@ -1,47 +1,40 @@
 ## Goal
 
-Replace the current flat quote cards in `src/components/testimonials-section.tsx` with a more editorial, branded card design inspired by the attached Rimberio testimonial. Keep data, query, and routing untouched — purely a UI/UX revision.
+Tighten the proportions of the redesigned "What people are saying" cards so they sit comfortably within the rest of the landing page. Pure CSS/spacing tweaks in `src/components/testimonials-section.tsx` — no structural or data changes.
 
-## Reference read
+## Issues observed (390px viewport)
 
-The Rimberio card has three stacked zones:
-1. **Dark header band** — small avatar chip + name on the left, 5 gold stars on the right.
-2. **Large hero photo** — dominant portrait, edge-to-edge within the card.
-3. **Cream quote panel** — rounded, inset, italic serif quote, attribution.
+- Cards feel oversized: hero photo at `5/4` on mobile pushes the quote panel below the fold.
+- Grid `gap-6` looks tight at desktop given the new card chrome; mobile single column has no visual breathing room between cards.
+- Quote panel padding (`p-5`) + display serif at `text-lg` makes each card visually heavy.
+- Section vertical padding (`py-12 sm:py-20`) plus large heading compounds the "too big" feel.
 
-Background uses olive/sage and warm gold accent blocks behind the card to give a layered "poster" feel.
+## Adjustments
 
-## Design adaptation (Sans Sucre tokens)
+**Card sizing**
+- Hero aspect: `aspect-[16/10]` mobile, `aspect-[4/3]` sm+ (shorter on phones).
+- Cap card max width on single-column mobile (`max-w-sm mx-auto`) so it doesn't span edge-to-edge.
+- Quote panel margin `m-2.5`, padding `p-4`, gap `gap-2`.
+- Quote text: `text-sm sm:text-base`, line-clamp from 4 → 3.
+- Header band: reduce vertical padding `py-2.5`, avatar `h-6 w-6`, name `text-xs`.
+- Stars: `h-3 w-3`.
 
-- Header band: `bg-primary` (sage) with `text-primary-foreground`. Avatar inside a small `bg-accent` (gold) circle. Stars in `--accent` gold.
-- Photo: full-bleed inside card, fixed aspect (4/3 desktop, 5/4 mobile), `object-cover`. If no `photo_url`, show a sage/gold gradient block with the person's initial in display font (no broken layout).
-- Quote panel: `bg-card` (cream), generous padding, italic display serif, attribution in small uppercase tracked label.
-- Card shell: `rounded-2xl`, subtle border, soft shadow, hover lifts shadow + translateY(-2px).
-- Section backdrop: keep section width, but add two soft offset color blocks behind the grid (sage + gold, low opacity, blurred) for the editorial "poster" feel without overwhelming.
-- Eyebrow + heading unchanged in copy; restyle heading slightly (tighter leading, gold underline accent on a single word).
+**Grid spacing**
+- `gap-5 sm:gap-6 lg:gap-8` so cards have clear separation on desktop and mobile.
+- Constrain section to `max-w-5xl` again (was `6xl`) — better balance with rest of page sections.
 
-## Layout
+**Section rhythm**
+- Reduce `py-12 sm:py-20` → `py-10 sm:py-16` (matches sibling sections).
+- Heading `text-2xl sm:text-3xl` (was 3xl/4xl).
+- Tighten heading margin and eyebrow spacing.
 
-- Grid: 1 col mobile, 2 col `sm`, 3 col `lg` (unchanged count, still limit 6).
-- Cards equal height via `flex flex-col`; quote panel grows (`flex-1`) so attributions align across rows.
-- Add a 5-star row to every card (static, since we don't store ratings — treat as brand decoration, consistent with reference).
+**Backdrop blobs**
+- Smaller/softer: `h-48 w-48` and `h-56 w-56`, lower opacity.
 
-## UX touches
+## Files
 
-- Quote text clamped to ~4 lines (`line-clamp-4`) to keep cards even; full quote still readable on hover via `title` attribute.
-- Empty state (no testimonials yet) keeps current copy but adopts the same card chrome as a single "Be the first" card with a CTA button to `/share-your-story`.
-- "Share your own story →" link restyled as a pill button under the grid.
-- Respect reduced motion: hover lift only when `motion-safe`.
-
-## Files to change
-
-- `src/components/testimonials-section.tsx` — full rewrite of the markup; data fetching logic untouched.
-- `src/styles.css` — only if a new utility (e.g. `line-clamp-4` already provided by Tailwind plugin) or a small `--shadow-card` token is needed. Likely no change.
-
-No schema, server function, or routing changes.
+- `src/components/testimonials-section.tsx` — class adjustments only.
 
 ## Out of scope
 
-- Adding a real ratings field to the `testimonials` table.
-- Changing admin moderation UI.
-- Carousel/auto-scroll behavior.
+- Card structure, data, copy, empty state behavior.
