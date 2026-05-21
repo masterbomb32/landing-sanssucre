@@ -1,86 +1,137 @@
-## Recommended direction
+## Recommended next step
 
-The issue is not just the card styling anymore: the live preview is currently falling back to the empty-state card because no eligible published testimonial cards are being loaded/displayed on the homepage. Instead of continuing to fight the carousel, I recommend replacing this section with a more reliable **“Share your own story” showcase** that works well whether there are 0, 1, or many stories.
+Stop trying to make the current testimonial cards behave like a carousel/grid. It has already failed too many times and the homepage is suffering. I would replace the section with a simpler **Share Your Own Story showcase** that does not depend on exact card-count math.
 
-## Best UX option: editorial story wall + CTA
+## The real issue
 
-Replace the carousel with a static responsive showcase:
+The section keeps failing because we are mixing two goals:
+
+1. Showing customer testimonials.
+2. Promoting the “Share your own story” action.
+
+Trying to force those into a card carousel/grid has caused oversized cards, inconsistent breakpoints, slow image perception, and confusing “always 4” behavior.
+
+## Better approaches
+
+### Option A — Recommended: Featured story + small story rail
+
+Use one controlled feature area instead of equal testimonial cards.
 
 ```text
-Desktop
-[ Featured story / invitation panel ] [ Story card ] [ Story card ] [ Story card ]
-
-Tablet
-[ Featured story / invitation panel ] [ Story card ]
-[ Story card ]                    [ Story card ]
+Desktop/tablet
+[ Share your own story feature panel ]
+[ small story ] [ small story ] [ small story ] [ small story ]
 
 Mobile
-[ Featured invitation panel ]
-[ Story card ]
-[ Story card ]
+[ Share your own story feature panel ]
+[ small story ]
+[ small story ]
 ```
 
-### Why this is better
-- No carousel width bugs or hidden single-slide behavior.
-- Desktop naturally shows 4 columns when stories exist.
-- Tablet naturally shows 2 columns.
-- Mobile shows 1 column.
-- Card heights can be equal using CSS grid instead of carousel slide sizing.
-- The CTA stays visible and useful even when there are no testimonials yet.
+Why this is safer:
+- The CTA is always the main message.
+- Testimonial cards become small supporting proof, not giant page sections.
+- If there are 1, 2, 4, or 12 testimonials, the layout still looks intentional.
+- No carousel width bugs.
+- No oversized photo cards.
 
-## What I would implement
+### Option B — Compact quote wall
 
-### 1. Remove carousel dependency from this section
-- Stop using `Carousel`, `CarouselContent`, and `CarouselItem` in `src/components/testimonials-section.tsx`.
-- Use a plain CSS grid instead:
-  - `grid-cols-1`
-  - `md:grid-cols-2`
-  - `lg:grid-cols-4`
-
-### 2. Turn “Share your own story” into the lead card
-- Make the first card a branded invitation card, not a small fallback box.
-- It should say something like:
-  - “Your Sans Sucre moment belongs here.”
-  - “Share a photo, a few words, or a favorite treat from opening day.”
-- CTA button: “Share your story”.
-
-### 3. Show testimonial cards beside it when available
-- Display up to 3 testimonial cards next to the CTA on desktop, making 4 total visible cards.
-- If there are 4+ testimonials, show 4 story cards and move the CTA below as a centered button.
-- If there are 0 testimonials, show a polished 3-card preview/invitation layout instead of one lonely card.
-
-### 4. Lock all card proportions
-- Fixed card min-height.
-- Fixed image area height.
-- Quote text clamped to 3 lines.
-- Same header/footer sizing on every card.
-- No card can grow taller because of long text or photo aspect ratio.
-
-### 5. Improve image loading
-- First visible story images use eager loading and explicit dimensions.
-- All image containers keep stable dimensions before images load.
-- Images use `object-cover`, so portrait/landscape uploads do not distort the grid.
-
-## Fallback design when no testimonials exist
-
-Instead of showing only one centered card, show a complete invitation section:
+Remove large photos entirely from the homepage and show compact quote tiles.
 
 ```text
-[ Share your story CTA ] [ Opening day memory prompt ] [ Favorite treat prompt ] [ Photo moment prompt ]
+[ Share your story CTA ]
+“Quote...” — Name     “Quote...” — Name
+“Quote...” — Name     “Quote...” — Name
 ```
 
-This makes the section look intentional even before real customer stories exist.
+Why this works:
+- Fastest loading option.
+- No image layout problems.
+- Testimonials look clean and editorial.
+- Best if the goal is trust, not photo browsing.
+
+### Option C — Photo mosaic + CTA overlay
+
+Show a cropped photo collage with a strong CTA.
+
+```text
+[ Photo ][ Photo ][ Photo ][ Photo ]
+[        Share your own story        ]
+[ Photo ][ Photo ][ Photo ][ Photo ]
+```
+
+Why this works:
+- More visual and social.
+- Photos feel like community moments.
+- Text testimonials can be hidden behind a “Read stories” link or shown below.
+
+### Option D — Move full testimonials to a separate page
+
+Homepage only shows a small invitation section:
+
+```text
+Share your Sans Sucre moment
+[ Share your story ] [ Read stories ]
+```
+
+Then `/share-your-story` or a new stories page can show all full-size testimonial cards.
+
+Why this works:
+- Homepage stays focused on claiming the treat.
+- No more giant testimonial section blocking the funnel.
+- Full stories still exist, but not as a homepage layout risk.
+
+## My recommendation
+
+Implement **Option A: Featured story + small story rail**.
+
+It solves the core UX problem without removing social proof:
+- The main card is the “Share your own story” invitation.
+- Testimonials become compact supporting cards.
+- Desktop and tablet do not need to show “exactly 4 cards at a time.” They show a stable story rail that can wrap naturally.
+- Mobile remains clean.
+
+## Implementation plan
+
+### 1. Replace the current testimonial grid/cards
+- Remove the current large photo testimonial card layout from the homepage section.
+- Do not use the carousel.
+- Do not use equal-height giant cards.
+
+### 2. Build a “Share Your Own Story” feature panel
+- Large but controlled invitation panel.
+- Clear CTA: “Share your story”.
+- Short copy only.
+- Use brand sage/gold styling from the existing design system.
+
+### 3. Add compact testimonial chips/cards
+- Each story card uses:
+  - Small square/circle thumbnail, or initials if no image.
+  - Name.
+  - Short clamped quote, max 2 lines.
+  - Optional source.
+- No large images on homepage.
+- No card can grow taller because of long text.
+
+### 4. Responsive behavior
+- Desktop: feature panel plus compact story rail.
+- Tablet: same layout, story rail wraps into 2 columns if needed.
+- Mobile: feature panel first, then compact story cards stacked.
+
+### 5. Data behavior
+- If there are testimonials: show up to 4 compact stories.
+- If there are no testimonials: show 3 prompt cards instead of fake/broken testimonials.
+- The CTA remains visible in all cases.
+
+### 6. Verification
+- Check desktop, tablet, and mobile in the preview.
+- Confirm the section never becomes one giant card.
+- Confirm images no longer cause slow perceived loading because they are thumbnails only.
+- Confirm the CTA is clear and not hidden below oversized testimonials.
 
 ## Files to change
 
 - `src/components/testimonials-section.tsx` only.
 
-## Verification checklist
-
-After implementation:
-- Desktop around 1190px: 4 equal-width cards/tiles visible.
-- Tablet around 768px: 2 equal-width cards/tiles visible.
-- Mobile: 1 card per row.
-- No carousel arrows.
-- No oversized testimonial cards.
-- Empty state no longer looks like a broken single-card carousel.
+No database changes. No route changes. No generated route file edits.

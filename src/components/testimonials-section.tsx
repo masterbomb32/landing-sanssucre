@@ -22,25 +22,11 @@ function Stars() {
   );
 }
 
-function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
+function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
-      {/* Header band */}
-      <header className="flex items-center justify-between gap-2 bg-primary px-2.5 py-1.5 text-primary-foreground">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-5 w-5 flex-none items-center justify-center rounded-full bg-gold text-[9px] font-semibold text-foreground/80">
-            {initial}
-          </span>
-          <span className="truncate font-display text-[11px] font-semibold tracking-wide">
-            {t.name}
-          </span>
-        </div>
-        <Stars />
-      </header>
-
-      {/* Hero photo — fixed height for consistent card size */}
-      <div className="relative h-40 w-full overflow-hidden bg-secondary">
+    <article className="group flex min-h-32 gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
+      <div className="relative h-14 w-14 flex-none overflow-hidden rounded-lg bg-secondary">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -48,31 +34,28 @@ function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
             loading={eager ? "eager" : "lazy"}
             decoding="async"
             fetchPriority={eager ? "high" : "auto"}
-            width={400}
-            height={160}
+            width={112}
+            height={112}
             className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 via-gold/20 to-accent/30">
-            <span className="font-display text-5xl font-bold text-primary/60">{initial}</span>
+          <div className="flex h-full w-full items-center justify-center bg-secondary">
+            <span className="font-display text-lg font-bold text-primary/70">{initial}</span>
           </div>
         )}
       </div>
 
-      {/* Quote panel — fixed height so cards match */}
-      <div className="m-1.5 flex h-[6.5rem] flex-col gap-1.5 rounded-lg bg-secondary/60 p-2.5">
-        <svg viewBox="0 0 24 24" className="h-3 w-3 flex-none text-gold-deep" fill="currentColor" aria-hidden>
-          <path d="M7.5 5C4.5 5 2 7.5 2 10.5V19h7v-8H5.5c0-1.7 1.3-3 3-3V5zm10 0c-3 0-5.5 2.5-5.5 5.5V19h7v-8H15c0-1.7 1.3-3 3-3V5z" />
-        </svg>
-        <blockquote
-          className="flex-1 font-display text-[13px] italic leading-snug text-foreground line-clamp-3"
-          title={t.quote ?? undefined}
-        >
-          {t.quote}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="truncate font-display text-sm font-bold leading-tight">{t.name}</h3>
+            {t.source && <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t.source}</p>}
+          </div>
+          <Stars />
+        </div>
+        <blockquote className="mt-2 line-clamp-2 text-sm leading-snug text-foreground/80" title={t.quote ?? undefined}>
+          “{t.quote}”
         </blockquote>
-        <figcaption className="text-[9px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          — {t.name}{t.source ? ` · ${t.source}` : ""}
-        </figcaption>
       </div>
     </article>
   );
