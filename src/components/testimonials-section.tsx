@@ -63,19 +63,19 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
 
 function ShareYourStoryCard() {
   return (
-    <article className="group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-primary/30 bg-gradient-to-br from-primary via-primary to-primary/90 p-5 text-primary-foreground shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
+    <article className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">
       <div aria-hidden className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gold/30 blur-2xl" />
       <div aria-hidden className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-gold/20 blur-2xl" />
 
       <p className="font-display text-[10px] uppercase tracking-[0.3em] text-gold">Your turn</p>
-      <h3 className="mt-2 font-display text-xl font-bold leading-tight">
+      <h3 className="mt-2 max-w-xl font-display text-2xl font-bold leading-tight sm:text-3xl">
         Your Sans Sucre moment belongs here.
       </h3>
-      <p className="mt-2 text-[13px] leading-snug text-primary-foreground/85">
+      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-primary-foreground/85 sm:text-base">
         Share a photo, a few words, or a favorite treat from opening day.
       </p>
 
-      <div className="mt-auto pt-4">
+      <div className="mt-6">
         <Link
           to="/share-your-story"
           className="inline-flex h-9 items-center justify-center rounded-full bg-gold px-4 text-[13px] font-semibold text-foreground shadow-sm transition-transform motion-safe:group-hover:translate-x-0.5"
@@ -113,12 +113,7 @@ export function TestimonialsSection() {
     };
   }, []);
 
-  // Layout strategy:
-  // - 0 testimonials: CTA card + 0 stories (just CTA centered)
-  // - 1-3 testimonials: CTA card leads, stories fill remaining columns (4 tiles total on desktop)
-  // - 4+ testimonials: show 4 stories, CTA moves below as a button
-  const showCtaAsLead = items.length < 4;
-  const visible = showCtaAsLead ? items.slice(0, 3) : items.slice(0, 4);
+  const visible = items.slice(0, 4);
 
   return (
     <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-14">
@@ -150,22 +145,28 @@ export function TestimonialsSection() {
       </div>
 
       {loaded && (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {showCtaAsLead && <ShareYourStoryCard />}
-          {visible.map((t, i) => (
-            <TestimonialCard key={t.id} t={t} eager={i < 4} />
-          ))}
-        </div>
-      )}
+        <div className="space-y-4">
+          <ShareYourStoryCard />
 
-      {loaded && !showCtaAsLead && (
-        <div className="mt-8 text-center sm:mt-10">
-          <Link
-            to="/share-your-story"
-            className="inline-flex h-11 items-center justify-center rounded-full border border-primary/30 bg-card px-6 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
-          >
-            Share your own story →
-          </Link>
+          {visible.length > 0 ? (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+              {visible.map((t, i) => (
+                <TestimonialChip key={t.id} t={t} eager={i < 4} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              {[
+                "Opening day memory",
+                "Favorite treat",
+                "Photo moment",
+              ].map((prompt) => (
+                <div key={prompt} className="rounded-xl border border-border/70 bg-card p-4 text-sm font-medium text-foreground/80 shadow-sm">
+                  {prompt}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </section>
