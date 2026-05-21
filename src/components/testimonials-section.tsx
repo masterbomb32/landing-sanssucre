@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,9 +12,9 @@ interface Testimonial {
 
 function Stars() {
   return (
-    <div className="flex items-center gap-0.5 text-gold-deep" aria-hidden>
+    <div className="flex items-center gap-0.5 text-primary-foreground" aria-hidden>
       {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
+        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
           <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
         </svg>
       ))}
@@ -22,11 +22,13 @@ function Stars() {
   );
 }
 
-function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
-  const initial = t.name.slice(0, 1).toUpperCase();
+const cardShell = "snap-center overflow-hidden rounded-[2rem] bg-sage shadow-sm";
+const cardSize = "w-[15.75rem] flex-none sm:w-[16.75rem] lg:w-[calc((100%-4.5rem)/4)]";
+
+function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   return (
-    <article className="group flex min-h-[7.25rem] gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
-      <div className="relative h-12 w-12 flex-none overflow-hidden rounded-md bg-secondary">
+    <article className={`${cardShell} ${cardSize}`}>
+      <div className="relative h-32 overflow-hidden rounded-t-[1.6rem] bg-secondary sm:h-34 lg:h-32">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -34,28 +36,27 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
             loading={eager ? "eager" : "lazy"}
             decoding="async"
             fetchPriority={eager ? "high" : "auto"}
-            width={112}
-            height={112}
-            className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
+            width={420}
+            height={260}
+            className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-secondary">
-            <span className="font-display text-lg font-bold text-primary/70">{initial}</span>
+          <div className="flex h-full w-full items-center justify-center bg-primary/15">
+            <span className="font-display text-5xl font-bold text-primary/70">{t.name.slice(0, 1).toUpperCase()}</span>
           </div>
         )}
       </div>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate font-display text-sm font-bold leading-tight">{t.name}</h3>
-            {t.source && <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{t.source}</p>}
-          </div>
-          <Stars />
-        </div>
-        <blockquote className="mt-2 line-clamp-2 text-sm leading-snug text-foreground/80" title={t.quote ?? undefined}>
+      <div className="flex h-[11.25rem] flex-col px-3 pb-5 pt-2.5 sm:h-[11.75rem] sm:px-3.5">
+        <Stars />
+        <span className="mt-2 font-display text-lg leading-none text-primary-foreground">“</span>
+        <blockquote className="line-clamp-4 font-display text-[13px] font-bold italic leading-[1.18] text-foreground/65" title={t.quote ?? undefined}>
           “{t.quote}”
         </blockquote>
+        <div className="mt-auto min-w-0 pt-2">
+          <h3 className="truncate text-sm font-medium leading-tight text-primary-foreground">{t.name}</h3>
+          {t.source && <p className="mt-0.5 truncate text-[10px] uppercase tracking-[0.16em] text-primary-foreground/75">{t.source}</p>}
+        </div>
       </div>
     </article>
   );
@@ -63,21 +64,21 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
 
 function ShareYourStoryCard() {
   return (
-    <article className="group flex h-full min-h-[15.5rem] flex-col justify-between rounded-lg border border-primary/30 bg-primary p-5 text-primary-foreground shadow-sm sm:p-6">
+    <article className={`${cardShell} ${cardSize} flex min-h-[19.5rem] flex-col justify-between p-5 text-primary-foreground sm:min-h-[20.5rem] lg:min-h-[19.25rem]`}>
       <div>
-        <p className="font-display text-[10px] uppercase tracking-[0.3em] text-gold">Your turn</p>
-        <h3 className="mt-3 max-w-md font-display text-2xl font-bold leading-tight">
-        Your Sans Sucre moment belongs here.
+        <p className="font-display text-[10px] uppercase tracking-[0.3em] text-primary-foreground/80">Your turn</p>
+        <h3 className="mt-4 font-display text-2xl font-bold leading-tight">
+          Share your own story.
         </h3>
-        <p className="mt-3 max-w-md text-sm leading-relaxed text-primary-foreground/85">
+        <p className="mt-4 text-sm leading-relaxed text-foreground/65">
           Share a photo, a few words, or a favorite treat from opening day.
         </p>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-8">
         <Link
           to="/share-your-story"
-          className="inline-flex h-10 items-center justify-center rounded-full bg-gold px-5 text-sm font-semibold text-foreground shadow-sm transition-transform motion-safe:group-hover:translate-x-0.5"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-primary-foreground px-5 text-sm font-semibold text-foreground shadow-sm transition-transform motion-safe:hover:translate-x-0.5"
         >
           Share your story →
         </Link>
