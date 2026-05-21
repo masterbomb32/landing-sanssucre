@@ -25,9 +25,9 @@ function Stars() {
 function TestimonialCard({ t }: { t: Testimonial }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group relative flex w-full max-w-sm flex-col self-center overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-xl sm:max-w-none">
+    <article className="group relative flex w-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-xl">
       {/* Header band */}
-      <header className="flex items-center justify-between gap-3 bg-primary px-3.5 py-2.5 text-primary-foreground">
+      <header className="flex items-center justify-between gap-3 bg-primary px-3 py-2 text-primary-foreground">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-foreground/80">
             {initial}
@@ -40,7 +40,7 @@ function TestimonialCard({ t }: { t: Testimonial }) {
       </header>
 
       {/* Hero photo */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary sm:aspect-[4/3]">
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-secondary">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -56,12 +56,12 @@ function TestimonialCard({ t }: { t: Testimonial }) {
       </div>
 
       {/* Quote panel */}
-      <div className="m-2.5 flex flex-1 flex-col gap-2 rounded-xl bg-secondary/60 p-4">
+      <div className="m-2 flex min-h-[7.5rem] flex-1 flex-col gap-2 rounded-xl bg-secondary/60 p-3.5">
         <svg viewBox="0 0 24 24" className="h-4 w-4 flex-none text-gold-deep" fill="currentColor" aria-hidden>
           <path d="M7.5 5C4.5 5 2 7.5 2 10.5V19h7v-8H5.5c0-1.7 1.3-3 3-3V5zm10 0c-3 0-5.5 2.5-5.5 5.5V19h7v-8H15c0-1.7 1.3-3 3-3V5z" />
         </svg>
         <blockquote
-          className="flex-1 font-display text-sm italic leading-snug text-foreground line-clamp-3 sm:text-base"
+          className="flex-1 font-display text-sm italic leading-snug text-foreground line-clamp-3"
           title={t.quote ?? undefined}
         >
           {t.quote}
@@ -121,7 +121,7 @@ export function TestimonialsSection() {
   }
 
   return (
-    <section className="relative mx-auto max-w-5xl px-5 py-10 sm:py-16">
+    <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-16">
       {/* Editorial backdrop blocks */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <div className="absolute -left-12 top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
@@ -139,7 +139,7 @@ export function TestimonialsSection() {
         </h2>
       </div>
 
-      <div className="grid gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
         {items.map((t) => (
           <TestimonialCard key={t.id} t={t} />
         ))}
