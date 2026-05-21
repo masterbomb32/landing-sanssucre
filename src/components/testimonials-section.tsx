@@ -25,8 +25,8 @@ function Stars() {
 function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group flex min-h-32 gap-3 rounded-xl border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
-      <div className="relative h-14 w-14 flex-none overflow-hidden rounded-lg bg-secondary">
+    <article className="group flex min-h-[7.25rem] gap-3 rounded-lg border border-border/70 bg-card p-3 shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
+      <div className="relative h-12 w-12 flex-none overflow-hidden rounded-md bg-secondary">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -63,22 +63,21 @@ function TestimonialChip({ t, eager }: { t: Testimonial; eager?: boolean }) {
 
 function ShareYourStoryCard() {
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-primary p-6 text-primary-foreground shadow-sm sm:p-8">
-      <div aria-hidden className="pointer-events-none absolute -right-6 -top-6 h-24 w-24 rounded-full bg-gold/30 blur-2xl" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-8 -left-8 h-28 w-28 rounded-full bg-gold/20 blur-2xl" />
-
-      <p className="font-display text-[10px] uppercase tracking-[0.3em] text-gold">Your turn</p>
-      <h3 className="mt-2 max-w-xl font-display text-2xl font-bold leading-tight sm:text-3xl">
+    <article className="group flex h-full min-h-[15.5rem] flex-col justify-between rounded-lg border border-primary/30 bg-primary p-5 text-primary-foreground shadow-sm sm:p-6">
+      <div>
+        <p className="font-display text-[10px] uppercase tracking-[0.3em] text-gold">Your turn</p>
+        <h3 className="mt-3 max-w-md font-display text-2xl font-bold leading-tight">
         Your Sans Sucre moment belongs here.
-      </h3>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-primary-foreground/85 sm:text-base">
-        Share a photo, a few words, or a favorite treat from opening day.
-      </p>
+        </h3>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-primary-foreground/85">
+          Share a photo, a few words, or a favorite treat from opening day.
+        </p>
+      </div>
 
       <div className="mt-6">
         <Link
           to="/share-your-story"
-          className="inline-flex h-9 items-center justify-center rounded-full bg-gold px-4 text-[13px] font-semibold text-foreground shadow-sm transition-transform motion-safe:group-hover:translate-x-0.5"
+          className="inline-flex h-10 items-center justify-center rounded-full bg-gold px-5 text-sm font-semibold text-foreground shadow-sm transition-transform motion-safe:group-hover:translate-x-0.5"
         >
           Share your story →
         </Link>
@@ -117,13 +116,7 @@ export function TestimonialsSection() {
 
   return (
     <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-14">
-      {/* Editorial backdrop blocks */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-12 top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -right-10 bottom-12 h-56 w-56 rounded-full bg-gold/15 blur-3xl" />
-      </div>
-
-      <div className="mb-8 text-center sm:mb-10">
+      <div className="mb-7 text-center sm:mb-8">
         <p className="font-display text-xs uppercase tracking-[0.3em] text-primary">In their words</p>
         <h2 className="mt-2 font-display text-2xl font-bold leading-tight sm:text-3xl">
           {items.length === 0 ? (
@@ -145,11 +138,11 @@ export function TestimonialsSection() {
       </div>
 
       {loaded && (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-[0.85fr_1.35fr]">
           <ShareYourStoryCard />
 
           {visible.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {visible.map((t, i) => (
                 <TestimonialChip key={t.id} t={t} eager={i < 4} />
               ))}
