@@ -32,7 +32,7 @@ function Stars() {
 function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group relative mx-auto flex w-full max-w-xs flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
+    <article className="group relative flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-md">
       {/* Header band */}
       <header className="flex items-center justify-between gap-2 bg-primary px-2.5 py-1.5 text-primary-foreground">
         <div className="flex min-w-0 items-center gap-2.5">
@@ -46,8 +46,8 @@ function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
         <Stars />
       </header>
 
-      {/* Hero photo */}
-      <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary">
+      {/* Hero photo — fixed height for consistent card size */}
+      <div className="relative h-40 w-full overflow-hidden bg-secondary">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -56,7 +56,7 @@ function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
             decoding="async"
             fetchPriority={eager ? "high" : "auto"}
             width={400}
-            height={320}
+            height={160}
             className="h-full w-full object-cover transition-transform duration-500 motion-safe:group-hover:scale-105"
           />
         ) : (
@@ -66,8 +66,8 @@ function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
         )}
       </div>
 
-      {/* Quote panel */}
-      <div className="m-1.5 flex min-h-[5.5rem] flex-1 flex-col gap-1.5 rounded-lg bg-secondary/60 p-2.5">
+      {/* Quote panel — fixed height so cards match */}
+      <div className="m-1.5 flex h-[6.5rem] flex-col gap-1.5 rounded-lg bg-secondary/60 p-2.5">
         <svg viewBox="0 0 24 24" className="h-3 w-3 flex-none text-gold-deep" fill="currentColor" aria-hidden>
           <path d="M7.5 5C4.5 5 2 7.5 2 10.5V19h7v-8H5.5c0-1.7 1.3-3 3-3V5zm10 0c-3 0-5.5 2.5-5.5 5.5V19h7v-8H15c0-1.7 1.3-3 3-3V5z" />
         </svg>
@@ -152,13 +152,13 @@ export function TestimonialsSection() {
 
       <Carousel
         opts={{ align: "start", loop: items.length > 4 }}
-        className="w-full px-2 sm:px-8"
+        className="w-full px-8 sm:px-12"
       >
         <CarouselContent className="-ml-3">
           {items.map((t, i) => (
             <CarouselItem
               key={t.id}
-              className="basis-full pl-3 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+              className="basis-full pl-3 md:basis-1/2 lg:basis-1/4"
             >
               <TestimonialCard t={t} eager={i < 4} />
             </CarouselItem>
@@ -166,8 +166,8 @@ export function TestimonialsSection() {
         </CarouselContent>
         {items.length > 1 && (
           <>
-            <CarouselPrevious className="hidden sm:flex left-0" />
-            <CarouselNext className="hidden sm:flex right-0" />
+            <CarouselPrevious className="hidden sm:flex left-1" />
+            <CarouselNext className="hidden sm:flex right-1" />
           </>
         )}
       </Carousel>
