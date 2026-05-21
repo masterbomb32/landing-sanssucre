@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface Testimonial {
   id: string;
@@ -89,7 +96,7 @@ export function TestimonialsSection() {
         .not("quote", "is", null)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(12);
       if (!cancelled) {
         setItems(data ?? []);
         setLoaded(true);
@@ -139,11 +146,24 @@ export function TestimonialsSection() {
         </h2>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-        {items.map((t) => (
-          <TestimonialCard key={t.id} t={t} />
-        ))}
-      </div>
+      <Carousel
+        opts={{ align: "start", loop: items.length > 4 }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          {items.map((t) => (
+            <CarouselItem key={t.id} className="basis-full pl-4 sm:basis-1/2 lg:basis-1/4">
+              <TestimonialCard t={t} />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        {items.length > 4 && (
+          <>
+            <CarouselPrevious className="hidden sm:flex -left-4 lg:-left-6" />
+            <CarouselNext className="hidden sm:flex -right-4 lg:-right-6" />
+          </>
+        )}
+      </Carousel>
 
       <div className="mt-8 text-center sm:mt-10">
         <Link

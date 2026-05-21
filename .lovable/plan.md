@@ -1,25 +1,33 @@
 ## Goal
 
-Show 4 testimonial cards per row on desktop instead of 2/3, and make every card the same size regardless of quote length or photo aspect.
+Convert the "What people are saying" grid into a horizontal carousel showing 4 cards at a time on desktop, with prev/next controls and responsive fallbacks.
+
+## Approach
+
+Use the existing shadcn `Carousel` component (`src/components/ui/carousel.tsx`, built on Embla) — already in the project, no new deps.
 
 ## Changes (`src/components/testimonials-section.tsx`)
 
-**Grid — 4 columns on desktop**
-- Replace `grid gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8` with `grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5`.
-- Bump section container from `max-w-5xl` → `max-w-6xl` so 4 cards have room to breathe without becoming cramped.
-- Fetch limit stays at 6 (already in query) — first 4 fill the row, extras wrap.
+**Replace the grid with `<Carousel>`**
+- Wrap items in `<Carousel opts={{ align: "start", loop: items.length > 4 }} className="w-full">`.
+- Each card becomes `<CarouselItem className="basis-full sm:basis-1/2 lg:basis-1/4 pl-4">`.
+- `<CarouselContent className="-ml-4">` for the negative-margin gutter pattern.
+- Add `<CarouselPrevious />` and `<CarouselNext />` — position them outside the track on desktop (`hidden sm:flex`), top-right of the section so they don't overlap cards.
 
-**Standardize card size**
-- Remove `max-w-sm self-center` cap on the card (was for single-column mobile). Cards fill their grid cell uniformly.
-- Lock hero photo to a single aspect ratio across all breakpoints: `aspect-[4/3]` (drop the `16/10` mobile variant) so every photo block is identical height.
-- Force the quote panel to a consistent height with `min-h-[7.5rem]` so cards with short quotes don't collapse and tall quotes don't expand. Keep `line-clamp-3` to cap overflow.
-- Card root: keep `flex flex-col`; the photo + quote panel now have fixed proportions, producing equal-height cards.
+**Responsive visibility per slide**
+- Mobile: 1 card per view (`basis-full`)
+- sm (≥640px): 2 cards (`sm:basis-1/2`)
+- lg (≥1024px): 4 cards (`lg:basis-1/4`)
 
-**Minor polish for 4-up density**
-- Header band padding `px-3 py-2` (was `px-3.5 py-2.5`) — tighter for narrower cards.
-- Quote panel margin `m-2` padding `p-3.5` (was `m-2.5 p-4`).
-- Quote text `text-sm` only (drop `sm:text-base`) so 4-up doesn't get oversized type.
+**Fetch limit**
+- Raise Supabase `.limit(6)` → `.limit(12)` so the carousel has enough slides to be worth swiping. If fewer than 5 exist, hide arrows (no scroll needed).
+
+**Card sizing**
+- Keep the standardized card (aspect-[4/3] photo, min-h quote panel) from the prior pass — no changes inside `TestimonialCard`.
+
+**Controls layout**
+- Place arrow buttons in the section header row, right-aligned next to the heading on desktop. On mobile, rely on swipe (arrows hidden).
 
 ## Out of scope
 
-Data fetching, empty state, section heading, backdrop blobs, card structure.
+Card visual design, data shape, empty state, section heading copy.
