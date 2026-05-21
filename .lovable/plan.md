@@ -1,33 +1,41 @@
-## Goal
+## Plan: Correct the testimonials carousel UI
 
-Convert the "What people are saying" grid into a horizontal carousel showing 4 cards at a time on desktop, with prev/next controls and responsive fallbacks.
+### Problems to fix
+- The carousel still behaves like a single centered card instead of a multi-card row.
+- Tablet is also showing one card instead of two.
+- Card heights vary because image aspect ratios and quote areas are not locked consistently.
+- The image area can become too tall, making the card feel larger than the page section.
 
-## Approach
+### Next steps
+1. **Replace the fragile carousel sizing with explicit slide widths**
+   - Use non-conflicting basis classes with Tailwind arbitrary values:
+     - Mobile: `basis-full`
+     - Tablet: `md:basis-1/2`
+     - Desktop: `lg:basis-1/4`
+   - Remove centering constraints that make each card look like a single featured card.
+   - Use a full-width carousel track with consistent gutters.
 
-Use the existing shadcn `Carousel` component (`src/components/ui/carousel.tsx`, built on Embla) — already in the project, no new deps.
+2. **Standardize every testimonial card**
+   - Give each card a fixed responsive height instead of letting image/quote content decide it.
+   - Use a compact card target: roughly 250–270px wide on desktop when 4 are visible.
+   - Lock the photo area height, then let images crop with `object-cover`.
+   - Lock the quote area height and clamp text so long testimonials do not expand the card.
 
-## Changes (`src/components/testimonials-section.tsx`)
+3. **Improve image loading behavior**
+   - Keep the first four images eager/high priority.
+   - Add explicit image dimensions and fixed rendered container sizes to prevent layout shift.
+   - Use `object-cover` with a fixed photo frame so portrait/landscape uploads don’t reshape cards.
 
-**Replace the grid with `<Carousel>`**
-- Wrap items in `<Carousel opts={{ align: "start", loop: items.length > 4 }} className="w-full">`.
-- Each card becomes `<CarouselItem className="basis-full sm:basis-1/2 lg:basis-1/4 pl-4">`.
-- `<CarouselContent className="-ml-4">` for the negative-margin gutter pattern.
-- Add `<CarouselPrevious />` and `<CarouselNext />` — position them outside the track on desktop (`hidden sm:flex`), top-right of the section so they don't overlap cards.
+4. **Move carousel controls out of the card area**
+   - Put previous/next buttons near the section heading or just outside the carousel track.
+   - Avoid giant empty side space with arrows floating at page edges.
 
-**Responsive visibility per slide**
-- Mobile: 1 card per view (`basis-full`)
-- sm (≥640px): 2 cards (`sm:basis-1/2`)
-- lg (≥1024px): 4 cards (`lg:basis-1/4`)
+5. **Verify in the preview before calling it done**
+   - Desktop around 1190px: confirm 4 cards side-by-side.
+   - Tablet around 768–834px: confirm 2 cards side-by-side.
+   - Mobile: confirm 1 card and swipe-friendly layout.
+   - Confirm all cards are equal height and no card dominates the page.
 
-**Fetch limit**
-- Raise Supabase `.limit(6)` → `.limit(12)` so the carousel has enough slides to be worth swiping. If fewer than 5 exist, hide arrows (no scroll needed).
-
-**Card sizing**
-- Keep the standardized card (aspect-[4/3] photo, min-h quote panel) from the prior pass — no changes inside `TestimonialCard`.
-
-**Controls layout**
-- Place arrow buttons in the section header row, right-aligned next to the heading on desktop. On mobile, rely on swipe (arrows hidden).
-
-## Out of scope
-
-Card visual design, data shape, empty state, section heading copy.
+### Technical change scope
+- Update only `src/components/testimonials-section.tsx`.
+- Do not change testimonial data, database rules, routes, or unrelated page sections.
