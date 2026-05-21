@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      error_log: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          level: string
+          message: string
+          path: string | null
+          source: string
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+          visitor_hash: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          path?: string | null
+          source: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_hash?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          path?: string | null
+          source?: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          visitor_hash?: string | null
+        }
+        Relationships: []
+      }
       faqs: {
         Row: {
           answer: string
