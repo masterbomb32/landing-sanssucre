@@ -14,7 +14,7 @@ function Stars() {
   return (
     <div className="flex items-center gap-0.5 text-gold-deep" aria-hidden>
       {Array.from({ length: 5 }).map((_, i) => (
-        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+        <svg key={i} viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
           <path d="M10 1.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L10 14.9l-5.2 2.7 1-5.8L1.5 7.7l5.9-.9L10 1.5z" />
         </svg>
       ))}
@@ -25,14 +25,14 @@ function Stars() {
 function TestimonialCard({ t }: { t: Testimonial }) {
   const initial = t.name.slice(0, 1).toUpperCase();
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-xl">
+    <article className="group relative flex w-full max-w-sm flex-col self-center overflow-hidden rounded-2xl border border-border/60 bg-card shadow-sm transition-all duration-300 motion-safe:hover:-translate-y-1 motion-safe:hover:shadow-xl sm:max-w-none">
       {/* Header band */}
-      <header className="flex items-center justify-between gap-3 bg-primary px-4 py-3 text-primary-foreground">
+      <header className="flex items-center justify-between gap-3 bg-primary px-3.5 py-2.5 text-primary-foreground">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-gold text-[11px] font-semibold text-foreground/80">
+          <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-gold text-[10px] font-semibold text-foreground/80">
             {initial}
           </span>
-          <span className="truncate font-display text-sm font-semibold tracking-wide">
+          <span className="truncate font-display text-xs font-semibold tracking-wide">
             {t.name}
           </span>
         </div>
@@ -40,7 +40,7 @@ function TestimonialCard({ t }: { t: Testimonial }) {
       </header>
 
       {/* Hero photo */}
-      <div className="relative aspect-[5/4] w-full overflow-hidden bg-secondary sm:aspect-[4/3]">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-secondary sm:aspect-[4/3]">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -50,18 +50,18 @@ function TestimonialCard({ t }: { t: Testimonial }) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 via-gold/20 to-accent/30">
-            <span className="font-display text-7xl font-bold text-primary/60">{initial}</span>
+            <span className="font-display text-6xl font-bold text-primary/60">{initial}</span>
           </div>
         )}
       </div>
 
       {/* Quote panel */}
-      <div className="m-3 flex flex-1 flex-col gap-3 rounded-xl bg-secondary/60 p-5">
-        <svg viewBox="0 0 24 24" className="h-5 w-5 flex-none text-gold-deep" fill="currentColor" aria-hidden>
+      <div className="m-2.5 flex flex-1 flex-col gap-2 rounded-xl bg-secondary/60 p-4">
+        <svg viewBox="0 0 24 24" className="h-4 w-4 flex-none text-gold-deep" fill="currentColor" aria-hidden>
           <path d="M7.5 5C4.5 5 2 7.5 2 10.5V19h7v-8H5.5c0-1.7 1.3-3 3-3V5zm10 0c-3 0-5.5 2.5-5.5 5.5V19h7v-8H15c0-1.7 1.3-3 3-3V5z" />
         </svg>
         <blockquote
-          className="flex-1 font-display text-base italic leading-snug text-foreground line-clamp-4 sm:text-lg"
+          className="flex-1 font-display text-sm italic leading-snug text-foreground line-clamp-3 sm:text-base"
           title={t.quote ?? undefined}
         >
           {t.quote}
@@ -121,16 +121,16 @@ export function TestimonialsSection() {
   }
 
   return (
-    <section className="relative mx-auto max-w-6xl px-5 py-12 sm:py-20">
+    <section className="relative mx-auto max-w-5xl px-5 py-10 sm:py-16">
       {/* Editorial backdrop blocks */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -left-16 top-24 h-64 w-64 rounded-full bg-primary/15 blur-3xl" />
-        <div className="absolute -right-12 bottom-16 h-72 w-72 rounded-full bg-gold/20 blur-3xl" />
+        <div className="absolute -left-12 top-20 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute -right-10 bottom-12 h-56 w-56 rounded-full bg-gold/15 blur-3xl" />
       </div>
 
-      <div className="mb-10 text-center sm:mb-12">
+      <div className="mb-8 text-center sm:mb-10">
         <p className="font-display text-xs uppercase tracking-[0.3em] text-primary">In their words</p>
-        <h2 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">
+        <h2 className="mt-2 font-display text-2xl font-bold leading-tight sm:text-3xl">
           What people are{" "}
           <span className="relative inline-block">
             saying
@@ -139,13 +139,13 @@ export function TestimonialsSection() {
         </h2>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8">
         {items.map((t) => (
           <TestimonialCard key={t.id} t={t} />
         ))}
       </div>
 
-      <div className="mt-10 text-center">
+      <div className="mt-8 text-center sm:mt-10">
         <Link
           to="/share-your-story"
           className="inline-flex h-11 items-center justify-center rounded-full border border-primary/30 bg-card px-6 text-sm font-medium text-primary shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
