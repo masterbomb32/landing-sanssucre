@@ -28,7 +28,7 @@ const cardSize = "w-[15.75rem] flex-none sm:w-[16.75rem] lg:w-[calc((100%-4.5rem
 function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   return (
     <article className={`${cardShell} ${cardSize}`}>
-      <div className="relative h-32 overflow-hidden rounded-t-[1.6rem] bg-secondary sm:h-34 lg:h-32">
+      <div className="relative h-32 overflow-hidden rounded-t-[1.6rem] bg-secondary sm:h-[8.5rem] lg:h-32">
         {t.photo_url ? (
           <img
             src={t.photo_url}
@@ -90,6 +90,7 @@ function ShareYourStoryCard() {
 export function TestimonialsSection() {
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,7 +114,14 @@ export function TestimonialsSection() {
     };
   }, []);
 
-  const visible = items.slice(0, 4);
+  const visible = items.slice(0, 8);
+  const scrollStories = (direction: "previous" | "next") => {
+    const track = trackRef.current;
+    if (!track) return;
+    const firstCard = track.querySelector<HTMLElement>("article");
+    const step = firstCard ? firstCard.offsetWidth + 24 : 300;
+    track.scrollBy({ left: direction === "next" ? step : -step, behavior: "smooth" });
+  };
 
   return (
     <section className="relative mx-auto max-w-6xl px-5 py-10 sm:py-14">
@@ -139,28 +147,38 @@ export function TestimonialsSection() {
       </div>
 
       {loaded && (
-        <div className="grid grid-cols-1 gap-4 min-[900px]:grid-cols-[0.85fr_1.35fr]">
-          <ShareYourStoryCard />
+        <div className="relative sm:px-14 lg:px-16">
+          <button
+            type="button"
+            aria-label="Previous stories"
+            onClick={() => scrollStories("previous")}
+            className="absolute left-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-secondary sm:flex"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden>
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
 
-          {visible.length > 0 ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {visible.map((t, i) => (
-                <TestimonialChip key={t.id} t={t} eager={i < 4} />
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              {[
-                "Opening day memory",
-                "Favorite treat",
-                "Photo moment",
-              ].map((prompt) => (
-                <div key={prompt} className="rounded-xl border border-border/70 bg-card p-4 text-sm font-medium text-foreground/80 shadow-sm">
-                  {prompt}
-                </div>
-              ))}
-            </div>
-          )}
+          <div
+            ref={trackRef}
+            className="flex flex-col items-center gap-6 overflow-visible sm:flex-row sm:items-stretch sm:gap-6 sm:overflow-x-auto sm:snap-x sm:snap-mandatory sm:pb-3 sm:[scrollbar-width:none] lg:overflow-hidden [&::-webkit-scrollbar]:hidden"
+          >
+            <ShareYourStoryCard />
+            {visible.map((t, i) => (
+              <TestimonialCard key={t.id} t={t} eager={i < 3} />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Next stories"
+            onClick={() => scrollStories("next")}
+            className="absolute right-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-sm transition-colors hover:bg-secondary sm:flex"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6" aria-hidden>
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </button>
         </div>
       )}
     </section>
