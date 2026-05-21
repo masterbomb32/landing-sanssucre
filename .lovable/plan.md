@@ -1,35 +1,47 @@
-# Sans Sucre Color Palette Rebrand
+## Goal
 
-Replace the current rose/cream patisserie palette with the official Sans Sucre brand palette from the attached reference.
+Replace the current flat quote cards in `src/components/testimonials-section.tsx` with a more editorial, branded card design inspired by the attached Rimberio testimonial. Keep data, query, and routing untouched — purely a UI/UX revision.
 
-## Brand colors (mapped to tokens)
+## Reference read
 
-| Brand swatch | Hex | Role |
-|---|---|---|
-| Bright White | `#FBFAFA` | `--background`, `--card` |
-| Neutral Gray | `#B5B1AF` | `--muted-foreground`, `--border`, body dividers |
-| Deep Sage Green | `#8FA293` | `--primary` (main brand), foreground accents |
-| Sage Green | `#BDCBBA` | `--secondary`, `--muted` |
-| Soft Coral | `#F9C5B7` | `--accent` (warm highlight) |
-| Classic Gold | `#E9C997` | `--gold` (highlights, hover) |
-| Premium Gold | `#C19B5A` | `--gold-deep` (elevated accents, CTA underlines) |
-| Foreground text | dark charcoal-sage | derived from Deep Sage |
+The Rimberio card has three stacked zones:
+1. **Dark header band** — small avatar chip + name on the left, 5 gold stars on the right.
+2. **Large hero photo** — dominant portrait, edge-to-edge within the card.
+3. **Cream quote panel** — rounded, inset, italic serif quote, attribution.
 
-## Changes (single file: `src/styles.css`)
+Background uses olive/sage and warm gold accent blocks behind the card to give a layered "poster" feel.
 
-1. **Replace `:root` token values** with oklch conversions of the brand hexes above. Primary becomes Deep Sage instead of deep rose. Accent becomes Soft Coral. Background becomes Bright White (cool, not warm cream).
-2. **Update the custom token block** in `@theme inline`:
-   - Remove `--color-rose`, `--color-rose-deep`, `--color-cream` (rose-era leftovers).
-   - Add `--color-sage`, `--color-sage-deep`, `--color-coral`, `--color-gold`, `--color-gold-deep`.
-3. **Update `.dark` mode** to a sage-charcoal scheme (deep sage background, coral/gold accents) so dark theme stays on-brand instead of generic blue.
-4. **Keep typography** (Playfair Display SC + PT Sans) — only colors change.
+## Design adaptation (Sans Sucre tokens)
 
-## Component cleanup
+- Header band: `bg-primary` (sage) with `text-primary-foreground`. Avatar inside a small `bg-accent` (gold) circle. Stars in `--accent` gold.
+- Photo: full-bleed inside card, fixed aspect (4/3 desktop, 5/4 mobile), `object-cover`. If no `photo_url`, show a sage/gold gradient block with the person's initial in display font (no broken layout).
+- Quote panel: `bg-card` (cream), generous padding, italic display serif, attribution in small uppercase tracked label.
+- Card shell: `rounded-2xl`, subtle border, soft shadow, hover lifts shadow + translateY(-2px).
+- Section backdrop: keep section width, but add two soft offset color blocks behind the grid (sage + gold, low opacity, blurred) for the editorial "poster" feel without overwhelming.
+- Eyebrow + heading unchanged in copy; restyle heading slightly (tighter leading, gold underline accent on a single word).
 
-Grep for any hardcoded `rose`, `cream`, `rose-deep` Tailwind utility usages introduced earlier and rename to the new `sage`/`coral`/`gold` tokens. No structural/layout changes.
+## Layout
+
+- Grid: 1 col mobile, 2 col `sm`, 3 col `lg` (unchanged count, still limit 6).
+- Cards equal height via `flex flex-col`; quote panel grows (`flex-1`) so attributions align across rows.
+- Add a 5-star row to every card (static, since we don't store ratings — treat as brand decoration, consistent with reference).
+
+## UX touches
+
+- Quote text clamped to ~4 lines (`line-clamp-4`) to keep cards even; full quote still readable on hover via `title` attribute.
+- Empty state (no testimonials yet) keeps current copy but adopts the same card chrome as a single "Be the first" card with a CTA button to `/share-your-story`.
+- "Share your own story →" link restyled as a pill button under the grid.
+- Respect reduced motion: hover lift only when `motion-safe`.
+
+## Files to change
+
+- `src/components/testimonials-section.tsx` — full rewrite of the markup; data fetching logic untouched.
+- `src/styles.css` — only if a new utility (e.g. `line-clamp-4` already provided by Tailwind plugin) or a small `--shadow-card` token is needed. Likely no change.
+
+No schema, server function, or routing changes.
 
 ## Out of scope
 
-- No layout, copy, component, or routing changes.
-- The push-notifications build fix from prior turns stays as-is.
-- Resuming roadmap/dev work is paused per the user's instruction until this rebrand lands.
+- Adding a real ratings field to the `testimonials` table.
+- Changing admin moderation UI.
+- Carousel/auto-scroll behavior.
