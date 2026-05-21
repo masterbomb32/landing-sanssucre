@@ -23,6 +23,7 @@ import { Route as ReceiptCodeRouteImport } from './routes/receipt.$code'
 import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
 import { Route as AdminMailingRouteImport } from './routes/admin.mailing'
 import { Route as AdminFaqsRouteImport } from './routes/admin.faqs'
+import { Route as AdminErrorsRouteImport } from './routes/admin.errors'
 import { Route as AdminCopyRouteImport } from './routes/admin.copy'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 
@@ -96,6 +97,11 @@ const AdminFaqsRoute = AdminFaqsRouteImport.update({
   path: '/faqs',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminErrorsRoute = AdminErrorsRouteImport.update({
+  id: '/errors',
+  path: '/errors',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCopyRoute = AdminCopyRouteImport.update({
   id: '/copy',
   path: '/copy',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/errors': typeof AdminErrorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
   '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/errors': typeof AdminErrorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
   '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/share-your-story': typeof ShareYourStoryRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/copy': typeof AdminCopyRoute
+  '/admin/errors': typeof AdminErrorsRoute
   '/admin/faqs': typeof AdminFaqsRoute
   '/admin/mailing': typeof AdminMailingRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/audit'
     | '/admin/copy'
+    | '/admin/errors'
     | '/admin/faqs'
     | '/admin/mailing'
     | '/admin/testimonials'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/audit'
     | '/admin/copy'
+    | '/admin/errors'
     | '/admin/faqs'
     | '/admin/mailing'
     | '/admin/testimonials'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/share-your-story'
     | '/admin/audit'
     | '/admin/copy'
+    | '/admin/errors'
     | '/admin/faqs'
     | '/admin/mailing'
     | '/admin/testimonials'
@@ -330,6 +342,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFaqsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/errors': {
+      id: '/admin/errors'
+      path: '/errors'
+      fullPath: '/admin/errors'
+      preLoaderRoute: typeof AdminErrorsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/copy': {
       id: '/admin/copy'
       path: '/copy'
@@ -350,6 +369,7 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCopyRoute: typeof AdminCopyRoute
+  AdminErrorsRoute: typeof AdminErrorsRoute
   AdminFaqsRoute: typeof AdminFaqsRoute
   AdminMailingRoute: typeof AdminMailingRoute
   AdminTestimonialsRoute: typeof AdminTestimonialsRoute
@@ -359,6 +379,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminCopyRoute: AdminCopyRoute,
+  AdminErrorsRoute: AdminErrorsRoute,
   AdminFaqsRoute: AdminFaqsRoute,
   AdminMailingRoute: AdminMailingRoute,
   AdminTestimonialsRoute: AdminTestimonialsRoute,
