@@ -4,6 +4,7 @@ import appCss from "../styles.css?url";
 import heroWebp from "@/assets/red-velvet-hero.webp";
 import { Toaster } from "@/components/ui/sonner";
 import { siteCopy } from "@/lib/site-copy";
+import { useErrorReporter } from "@/hooks/use-error-reporter";
 
 function NotFoundComponent() {
   return (
@@ -123,5 +124,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  useErrorReporter();
   return <Outlet />;
 }

@@ -79,6 +79,7 @@ function AdminLayout() {
     { to: "/admin/copy", label: "Edit copy" },
     { to: "/admin/faqs", label: "FAQs" },
     { to: "/admin/testimonials", label: "Testimonials" },
+    { to: "/admin/errors", label: "Errors" },
     { to: "/redeem", label: "Scan station" },
   ];
 
