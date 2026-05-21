@@ -23,7 +23,7 @@ function Stars() {
 }
 
 const cardShell = "snap-center overflow-hidden rounded-[2rem] bg-sage shadow-sm";
-const cardSize = "w-[15.75rem] flex-none sm:w-[16.75rem] lg:w-[calc((100%-4.5rem)/4)]";
+const cardSize = "w-[15.75rem] flex-none sm:w-[16.75rem] lg:w-[calc((100%_-_4.5rem)/4)]";
 
 function TestimonialCard({ t, eager }: { t: Testimonial; eager?: boolean }) {
   return (
@@ -87,6 +87,17 @@ function ShareYourStoryCard() {
   );
 }
 
+function PromptCard({ title, text }: { title: string; text: string }) {
+  return (
+    <article className={`${cardShell} ${cardSize} flex min-h-[19.5rem] flex-col justify-end p-5 text-primary-foreground sm:min-h-[20.5rem] lg:min-h-[19.25rem]`}>
+      <Stars />
+      <span className="mt-3 font-display text-lg leading-none text-primary-foreground">“</span>
+      <p className="font-display text-[13px] font-bold italic leading-[1.18] text-foreground/65">{text}</p>
+      <h3 className="mt-8 text-sm font-medium leading-tight text-primary-foreground">{title}</h3>
+    </article>
+  );
+}
+
 export function TestimonialsSection() {
   const [items, setItems] = useState<Testimonial[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -115,6 +126,11 @@ export function TestimonialsSection() {
   }, []);
 
   const visible = items.slice(0, 8);
+  const prompts = [
+    { title: "Opening day memory", text: "Tell us what you tried first and what made it worth remembering." },
+    { title: "Favorite treat", text: "Share the pastry, bite, or box you would come back for again." },
+    { title: "Photo moment", text: "Add your sweetest Sans Sucre photo and a few words with it." },
+  ];
   const scrollStories = (direction: "previous" | "next") => {
     const track = trackRef.current;
     if (!track) return;
@@ -164,9 +180,9 @@ export function TestimonialsSection() {
             className="flex flex-col items-center gap-6 overflow-visible sm:flex-row sm:items-stretch sm:gap-6 sm:overflow-x-auto sm:snap-x sm:snap-mandatory sm:pb-3 sm:[scrollbar-width:none] lg:overflow-hidden [&::-webkit-scrollbar]:hidden"
           >
             <ShareYourStoryCard />
-            {visible.map((t, i) => (
-              <TestimonialCard key={t.id} t={t} eager={i < 3} />
-            ))}
+            {visible.length > 0
+              ? visible.map((t, i) => <TestimonialCard key={t.id} t={t} eager={i < 3} />)
+              : prompts.map((prompt) => <PromptCard key={prompt.title} title={prompt.title} text={prompt.text} />)}
           </div>
 
           <button
