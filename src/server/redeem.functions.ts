@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { notifyStaffSilently } from "@/lib/push.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const FeedbackSchema = z.object({
   code: z.string().trim().min(8).max(64),
@@ -217,6 +218,7 @@ const NotifyRedeemSchema = z.object({
  * RPC call, so admins on other devices get a push.
  */
 export const notifyRedeem = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => NotifyRedeemSchema.parse(input))
   .handler(async ({ data }) => {
     let name = data.name;
