@@ -84,7 +84,6 @@ function RedeemedPage() {
   }
 
   const firstName = data.name.split(" ")[0];
-  const hasEmail = !!data.email;
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-background px-3 py-3 sm:px-4 sm:py-4">
@@ -161,8 +160,8 @@ function RedeemedPage() {
             <div className="mt-3">
               <MailingListBlock
                 code={code}
-                hasEmail={hasEmail}
-                existingEmail={data.email ?? undefined}
+                hasEmail={false}
+                existingEmail={undefined}
                 copy={copy.mailingList}
               />
             </div>
