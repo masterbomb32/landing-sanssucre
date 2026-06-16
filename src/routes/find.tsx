@@ -4,7 +4,7 @@ import { Loader2, Search } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { findReceiptByMobile } from "@/server/receipt.functions";
+import { findReceiptByMobile } from "@/lib/receipt.functions";
 import { useSiteCopy } from "@/hooks/use-site-copy";
 import { toast } from "sonner";
 

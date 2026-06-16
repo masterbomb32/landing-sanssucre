@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { fetchReceipt } from "@/server/receipt.functions";
+import { fetchReceipt } from "@/lib/receipt.functions";
 import { submitFeedback, fetchFeedbackStatus } from "@/server/redeem.functions";
 import { subscribeMailingList } from "@/server/mailing.functions";
 import { supabase } from "@/integrations/supabase/client";
