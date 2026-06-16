@@ -1,12 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const CodeSchema = z.object({ code: z.string().min(8).max(64) });
 
 export const fetchReceipt = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => CodeSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row, error } = await supabaseAdmin
       .from("signups")
       .select("id, name, reward_choice, redemption_code, redeemed_at, created_at")
@@ -55,6 +55,7 @@ export const findReceiptByMobile = createServerFn({ method: "POST" })
       attemptMap.set(mobile, { count: 1, resetAt: now + WINDOW_MS });
     }
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
       .from("signups")
       .select("redemption_code")

@@ -1,78 +1,53 @@
-## Feature verification report
+## Part 1 — Fix the build error (blocker)
 
-Audit of the 8 production-readiness items against the current codebase. Status legend: ✅ done · ⚠️ partial · ❌ missing.
+The build is failing because `src/server/receipt.functions.ts` is imported by three route files, but the template blocks the whole `src/server/` directory from client bundles — and the file also imports `client.server` at the top, which pulls the service-role key toward the browser graph.
 
-### 1. Full Supabase migration ⚠️ partial
-- All persistent data (signups, redemptions, testimonials, FAQs, mailing, audit, push subs, settings) lives in Supabase with RLS — verified in `<supabase-tables>`.
-- IndexedDB (`idb-keyval`) is still used **intentionally** in `src/lib/redeem-cache.ts` and `src/lib/redeem-outbox.ts` for the offline staff scanner (cached unredeemed codes + redeem outbox). This is a feature, not unstable mixed storage.
-- `localStorage`/`sessionStorage` usage is limited to: Supabase auth session (`client.ts`, required), visitor ID (`visitor.ts`), and referral code passthrough (`signup-form.tsx`). All non-critical.
-- **Verdict:** no actual "mixed storage instability". If the concern is the offline outbox, that's by design. Nothing to migrate.
+**Changes:**
+1. Move `src/server/receipt.functions.ts` → `src/lib/receipt.functions.ts` (client-safe path).
+2. Replace the top-level `import { supabaseAdmin } from "@/integrations/supabase/client.server"` with `await import(...)` inside each `.handler()` body, so the admin client never appears in the client graph.
+3. Update the three imports:
+   - `src/routes/redeemed.$code.tsx`
+   - `src/routes/find.tsx`
+   - `src/routes/receipt.$code.tsx`
+   from `@/server/receipt.functions` → `@/lib/receipt.functions`.
+4. Delete the old file.
 
-### 2. Email receipt / recovery ❌ missing
-- `signup.functions.ts` accepts an optional email but **never sends anything**. No email infra (`email_send_log`, `process-email-queue`, auth-email-hook) is set up.
-- Recovery exists only via `/find` (phone lookup) — no email link with the redemption code.
-- **Gap:** customers who lose the receipt link and don't remember their phone are stuck.
-- **Fix needed:** set up Lovable Emails domain → scaffold a transactional email → send "Your Sans Sucre reward code" on signup with link to `/receipt/{code}`. Add a "resend by email" action on `/find`.
+No behavior change — same functions, same validation, same throttle.
 
-### 3. Security hardening ⚠️ partial
-Strong:
-- All tables have RLS with role-based admin policies via `has_role()` security-definer.
-- Server-side Zod validation on every server fn input; PH mobile regex; length caps.
-- Staff PIN verified server-side with timing-delay; bcrypt-style stored in `staff_settings`.
-- Service role key isolated in `client.server.ts`.
+## Part 2 — Custom domain setup (your actual question)
 
-Gaps:
-- **No rate limiting** on `createSignup`, `submitPublicStory`, `logVisit`, `logShare` — anyone can flood inserts (RLS allows anon insert with length checks only).
-- **No CAPTCHA / bot protection** on the public signup form.
-- **`page_visits` / `share_events`** accept anon inserts with no per-visitor throttle.
-- **Leaked-password HIBP** check not enabled on auth (admin login).
-- **No security scan run yet** — recommend running `security--run_security_scan` before launch.
+You buy/connect the domain in Lovable, then either let Lovable manage DNS (if bought through Lovable) or add records at your registrar.
 
-### 4. Real analytics funnel ⚠️ partial
-- Raw events captured: `page_visits` (path, referrer, country, visitor_hash), `share_events` (channel, path), `signups`, `redemption_audit`, `referrals`.
-- `useTrackVisit` fires on mount per path.
-- **Gap:** no funnel view in admin. `admin.index.tsx` shows signup totals/redeem rate but no visit→signup→redeem→testimonial conversion chart. No drop-off by source/referrer.
-- **Fix:** add a `funnel` server fn that joins `page_visits` distinct visitors → `signups` → `redeemed_at not null` → `testimonials`, and a chart card on admin home. Optionally group by `referrer` host and `country`.
+### Option A — Buy the domain through Lovable (easiest)
+1. **Project Settings → Project → Domains → Buy new domain**.
+2. Search, pick, pay. Lovable auto-connects it and manages DNS for you.
+3. SSL provisions automatically; site is live on the new domain in a few minutes.
+4. Later, manage MX/SPF/DKIM/DMARC via **⋯ → Configure → Manage DNS records** on that same domain.
 
-### 5. Publish + domain setup ⚠️ partial
-- Project is published: `https://landing-sanssucre.lovable.app` is live.
-- No custom domain attached (project_urls shows none).
-- `.lovable/dns-recommendations.md` exists — domain choice presumably documented.
-- **Fix:** user needs to connect a custom domain via Project Settings → Domains, then we wire canonical `<link>` + og:url to it.
+### Option B — Connect a domain you already own
+1. Publish the project first (required before a custom domain can attach). Your current published URL is `landing-sanssucre.lovable.app`.
+2. **Project Settings → Project → Domains → Connect Domain**.
+3. Enter the domain (e.g. `sanssucre.ph`). Add **both** entries in Lovable — the root AND `www` — they aren't auto-paired.
+4. At your registrar, create:
+   - **A** record, name `@`, value `185.158.133.1`
+   - **A** record, name `www`, value `185.158.133.1`
+   - **TXT** record, name `_lovable`, value provided in the dialog (`lovable_verify=...`)
+5. If you front the domain with Cloudflare or another proxy, tick **Advanced → "Domain uses Cloudflare or a similar proxy"** so it uses CNAME verification instead.
+6. Remove any old A/CNAME on `@` or `www` pointing elsewhere — conflicts block verification.
+7. Wait for DNS propagation (usually minutes, up to 72 hours). Lovable auto-issues SSL.
+8. In the Domains list, choose which one is **Primary** (other redirects to it). Recommend `sanssucre.ph` primary, `www` redirects.
 
-### 6. Error tracking ❌ missing
-- No Sentry / PostHog / error logger wired. `errorMiddleware` not registered in `src/start.ts` (`requestMiddleware: []`).
-- `useTrackVisit` swallows errors with `.catch(() => {})`. Server fns throw to client but nothing is captured centrally.
-- **Fix:** add a lightweight `error_log` table + server fn `logClientError`, install a global window error / unhandledrejection listener, and add an `errorMiddleware` to `requestMiddleware` that writes server-fn errors to that table. Surface in admin.
+### Status meanings you'll see
+- **Verifying** — waiting on DNS propagation, no action.
+- **Setting up** — verified, SSL issuing.
+- **Active** — live.
+- **Offline / Failed** — DNS mismatch or SSL issuance failed; fix records and **Retry**.
 
-### 7. CSV export ✅ done
-- `src/lib/csv.ts` + admin buttons in `admin.index.tsx`:
-  - Signups CSV (respects current status filter): created_at, name, mobile, email, reward, code, redeemed_at, voided_at, void_reason.
-  - Testimonials CSV: created_at, name, rating, quote, source, published, comment_only.
-- **Minor polish suggestion:** add CSV escaping for commas/quotes/newlines in `downloadCsv` (current implementation likely naive — worth a quick look) and add a "redemptions only" preset for opening-day staff.
+### After it goes Active
+- I'll update SEO metadata (canonical, og:url, sitemap, robots) to point at the new domain.
+- Then we can knock out the email receipt + recovery, which needs the domain in place to set up Lovable Emails on a subdomain like `notify.sanssucre.ph`.
 
-### 8. Staff workflow polish ⚠️ partial
-Already in place:
-- PIN-gated staff station (`/redeem`), QR scanner, offline cache of unredeemed codes (`redeem-cache.ts`), redeem outbox with retries (`redeem-outbox.ts`), batch RPC `redeem_signup`, 30-second unredeem window, web-push notifications to staff (`use-staff-push`, VAPID keys configured).
-- Admin pages: audit log, copy editor, FAQs, mailing, testimonials moderation.
-
-Gaps worth polishing before opening day:
-- No visible "outbox pending: N" badge on `/redeem` for staff awareness.
-- No "today's redeemed count" live tile on the scanner screen.
-- No printable name+reward chit after successful scan (handy for the counter).
-- No quick-search by last 4 digits of code/mobile from `/redeem` when scanner fails.
-
----
-
-### Recommended next steps (ordered for launch)
-
-1. **Run security scan** + fix anything critical, enable HIBP password check.
-2. **Connect custom domain** (user action) → I'll wire canonical + og tags.
-3. **Add email receipt + recovery** (Lovable Emails domain → transactional template → send on signup + "resend" on `/find`). Biggest customer-facing gap.
-4. **Add error tracking table + middleware** + admin error log view.
-5. **Add rate limiting** on public-insert server fns (per-IP + per-visitor) to harden against floods.
-6. **Add funnel view** to admin home.
-7. **Staff polish**: outbox badge, today's count tile, optional name chit, code-tail search.
-8. **CSV polish**: proper escaping + redeemed-only preset.
-
-Items 1, 2, and 3 unblock launch. The rest can ship in a fast follow.
+### What I need from you
+- The exact domain you'll use (e.g. `sanssucre.ph`).
+- Whether you're buying through Lovable or connecting an existing one.
+- If existing: who your registrar is (GoDaddy, Namecheap, Cloudflare, etc.) so I can give you registrar-specific tips.

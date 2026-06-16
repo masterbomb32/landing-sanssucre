@@ -5,7 +5,7 @@ import { Check, MapPin, Info } from "lucide-react";
 import logo from "@/assets/sanssucre-logo.png";
 import { ShareButton } from "@/components/share-button";
 import { Countdown } from "@/components/countdown";
-import { fetchReceipt } from "@/server/receipt.functions";
+import { fetchReceipt } from "@/lib/receipt.functions";
 import { getReward } from "@/lib/rewards";
 import { siteCopy } from "@/lib/site-copy";
 import { useSiteCopy } from "@/hooks/use-site-copy";
