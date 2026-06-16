@@ -169,6 +169,7 @@ export type BatchOutcome = {
 export const redeemBatch = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => BatchSchema.parse(input))
   .handler(async ({ data }): Promise<{ results: BatchOutcome[] }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", {
       p_pin: data.pin,
     });
