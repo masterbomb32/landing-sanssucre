@@ -1,64 +1,84 @@
-## Part 1 — Fix the build (blocker, same root cause as last time)
+# Connect sanssucre.ph — staged cutover plan
 
-The import-protection plugin blocks the entire `src/server/` directory from the client bundle. It flagged `redeem.functions.ts` first, but every file in `src/server/` is reachable from a route or component and has the same problem (top-level `supabaseAdmin` import + bad directory). All 10 files need the same treatment as `receipt.functions.ts`.
+You want the current site at sanssucre.ph to stay live for ~1 week while we get the Lovable build wired up. The safe way is a **two-phase rollout**: connect a subdomain now to test the Lovable app end-to-end, then flip the root + www over when you're ready to retire the old site.
 
-**Files to move** `src/server/*.functions.ts` → `src/lib/*.functions.ts`:
-- `admin.functions.ts`
-- `conflict.functions.ts`
-- `dashboard.functions.ts`
-- `errors.functions.ts`
-- `faqs.functions.ts`
-- `mailing.functions.ts`
-- `redeem.functions.ts`
-- `signup.functions.ts`
-- `stats.functions.ts`
-- `testimonials.functions.ts`
+Pick a staging subdomain to use this week — recommended: **`new.sanssucre.ph`** (or `app.`, `preview.`, etc.). Below assumes `new.`.
 
-**In each moved file:** remove the top-level `import { supabaseAdmin } from "@/integrations/supabase/client.server"` and add `const { supabaseAdmin } = await import("@/integrations/supabase/client.server");` at the top of every `.handler()` body that uses it. Keep all other logic identical.
+---
 
-**Update all import sites** (`@/server/...` → `@/lib/...`) across:
-- `src/routes/redeemed.$code.tsx`
-- `src/routes/share-your-story.tsx`
-- `src/routes/admin.index.tsx`
-- `src/routes/redeem.tsx`
-- `src/routes/admin.faqs.tsx`
-- `src/routes/admin.mailing.tsx`
-- `src/routes/admin.testimonials.tsx`
-- `src/routes/faq.tsx`
-- `src/routes/admin.errors.tsx`
-- `src/routes/index.tsx`
-- `src/components/signup-form.tsx`
-- `src/components/share-button.tsx`
-- `src/hooks/use-error-reporter.ts`
-- `src/hooks/use-track-visit.ts`
+## Phase 1 — This week (old site stays up)
 
-Then `rm -rf src/server/`.
+### A. In Lovable
+1. Project Settings → Project → Domains → **Connect Domain**.
+2. Enter `new.sanssucre.ph`.
+3. Leave the Cloudflare/proxy checkbox **unchecked** (we'll confirm in a moment — see "Cloudflare check" below).
+4. Lovable shows two DNS records to add — typically:
+   - A record: name `new`, value `185.158.133.1`
+   - TXT record: name `_lovable.new`, value `lovable_verify=…` (copy the exact value Lovable shows)
 
-No behavior change — pure file relocation + lazy import.
+### B. In Namecheap
+1. Log in → Domain List → click **Manage** next to `sanssucre.ph`.
+2. Open the **Advanced DNS** tab.
+3. **Do not touch** any existing records for `@` (root) or `www` — that's what keeps your current site live.
+4. Click **Add New Record** twice and add exactly what Lovable showed:
+   - Type: `A Record`, Host: `new`, Value: `185.158.133.1`, TTL: Automatic
+   - Type: `TXT Record`, Host: `_lovable.new`, Value: `lovable_verify=…`, TTL: Automatic
+5. Save (green checkmark on each row).
 
-## Part 2 — Connecting your existing domain
+### C. Cloudflare check
+You weren't sure about proxy. Quick way to tell:
+- In Namecheap → Domain tab, look at **Nameservers**. If they're something like `kirk.ns.cloudflare.com` / `kate.ns.cloudflare.com`, your DNS is at Cloudflare, not Namecheap — in that case you'd add the records in the Cloudflare dashboard instead, and you should tick the proxy checkbox in Lovable and set the new record to **DNS only (grey cloud)** in Cloudflare for verification.
+- If nameservers are `dns1.registrar-servers.com` / `dns2.registrar-servers.com` (Namecheap BasicDNS), ignore Cloudflare entirely and follow step B above.
 
-Quick steps (you do these in the Lovable UI + your registrar):
+### D. Wait + verify
+- Status in Lovable Domains will go Verifying → Setting up → **Active** (usually 10–60 min on Namecheap, up to 72h worst case).
+- Once Active, open `https://new.sanssucre.ph` — that's your Lovable app, SSL and all. Your old site at `sanssucre.ph` and `www.sanssucre.ph` is untouched.
 
-1. In Lovable: **Project Settings → Project → Domains → Connect Domain**.
-2. Type your root domain (e.g. `sanssucre.ph`). After it's added, click **Connect Domain** again and add `www.sanssucre.ph` — they aren't auto-paired.
-3. Lovable will show you the records to add. At your registrar's DNS panel, create:
-   - **A** `@` → `185.158.133.1`
-   - **A** `www` → `185.158.133.1`
-   - **TXT** `_lovable` → the `lovable_verify=...` value shown in the dialog
-4. **Delete any old A/CNAME** on `@` or `www` pointing somewhere else — conflicts block verification.
-5. If you proxy through Cloudflare or similar, tick **Advanced → "Domain uses Cloudflare or a similar proxy"** in the connect dialog (switches it to CNAME verification).
-6. Wait. Status goes Verifying → Setting up → Active. Usually minutes; can take up to 72 hours.
-7. In the Domains list, mark one as **Primary** (recommend the root; `www` will redirect).
+Use this week to test the Lovable app on `new.sanssucre.ph`.
 
-### Once it's Active, I'll update on the next turn:
-- `BASE_URL` in `src/routes/sitemap[.]xml.ts` (currently `https://landing-sanssucre.lovable.app`)
-- canonical + og:url in every route's `head()`
-- any hardcoded `landing-sanssucre.lovable.app` references
+---
 
-### What I need from you to tailor the steps
-1. The exact domain (e.g. `sanssucre.ph` or a subdomain like `signup.sanssucre.ph`).
-2. Your DNS registrar (GoDaddy, Namecheap, Cloudflare, Google Domains, etc.) — so I can give you the exact place to add records.
-3. Whether you're fronting the domain with Cloudflare (orange-cloud proxy on).
+## Phase 2 — Cutover day (retiring the old site)
 
-Approve the plan and I'll fix the build immediately. Drop the domain + registrar in your next message and I'll guide you through the DNS step screen-by-screen.
+When you're ready to make Lovable the live site at the root:
+
+### A. In Lovable
+1. Domains → **Connect Domain** again, enter `sanssucre.ph`.
+2. Connect a second time for `www.sanssucre.ph`.
+3. Lovable will show A + TXT records for each (same IP `185.158.133.1`, separate `_lovable` / `_lovable.www` TXT values).
+4. After both go Active, set `sanssucre.ph` as **Primary** so `www` redirects to root.
+
+### B. In Namecheap (Advanced DNS)
+1. **Delete** every existing A / CNAME / ALIAS / URL Redirect record on host `@` and host `www` that points at your current host.
+2. Add:
+   - A record, Host `@`, Value `185.158.133.1`
+   - A record, Host `www`, Value `185.158.133.1`
+   - TXT record, Host `_lovable`, Value from Lovable
+   - TXT record, Host `_lovable.www`, Value from Lovable
+3. **Leave email records alone** — MX, and any TXT for SPF/DKIM/DMARC stay exactly as they are. We're only changing web traffic.
+4. (Optional) Remove the temporary `new` A record and `_lovable.new` TXT once you no longer need the staging subdomain.
+
+### C. Verify
+- `https://sanssucre.ph` and `https://www.sanssucre.ph` both load the Lovable app, with `www` redirecting to root.
+- Email still works (test by sending one to your domain mailbox).
+
+---
+
+## After cutover — code updates I'll handle for you
+
+Once the root domain is Active, on your say-so I'll update in one batch:
+- `BASE_URL` in the sitemap → `https://sanssucre.ph`
+- Canonical + `og:url` in every route head() → `https://sanssucre.ph/...`
+- Any hardcoded `landing-sanssucre.lovable.app` references in copy/metadata
+- `robots.txt` Sitemap directive (if/when you want one)
+
+Nothing in code needs to change during Phase 1 — the Lovable app works on any connected domain immediately.
+
+---
+
+## What I need from you to proceed
+
+1. Confirm the staging subdomain name (default: `new.sanssucre.ph`).
+2. Check Namecheap → Domain tab → Nameservers and tell me what's listed, so I know whether DNS lives at Namecheap or Cloudflare before you add records.
+
+Once you confirm those, switch me to Build mode and I'll walk through each click with you.
