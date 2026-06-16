@@ -1,15 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-async function assertAdmin(userId: string) {
-  const { data, error } = await supabaseAdmin.rpc("has_role", {
-    _user_id: userId,
-    _role: "admin",
-  });
-  if (error || data !== true) throw new Error("NOT_ADMIN");
-}
 
 export const getVapidPublicKey = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -30,6 +21,7 @@ export const registerStaffPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => RegisterSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("staff_push_subscriptions")
       .upsert(
@@ -58,6 +50,7 @@ export const unregisterStaffPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => UnregisterSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("staff_push_subscriptions")
       .delete()
@@ -73,7 +66,12 @@ export const unregisterStaffPush = createServerFn({ method: "POST" })
 export const sendTestStaffPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: ok, error: roleErr } = await supabaseAdmin.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (roleErr || ok !== true) throw new Error("NOT_ADMIN");
     const { fanOutStaffPush } = await import("./push.server");
     const result = await fanOutStaffPush({
       title: "Sans Sucre test 🍰",
