@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { REWARDS, getReward } from "@/lib/rewards";
 import { notifyStaffSilently } from "@/lib/push.server";
 
@@ -54,6 +53,7 @@ function normalizeMobile(input: string): string {
 export const createSignup = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SignupSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const mobile = normalizeMobile(data.mobile);
 
     // Enforce one signup per mobile (DB also has a unique constraint)
@@ -134,6 +134,7 @@ const VisitSchema = z.object({
 export const logVisit = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => VisitSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Cloudflare/Lovable edge sets cf-ipcountry; fall back to common alternates.
     const country =
       getRequestHeader("cf-ipcountry") ||
@@ -161,6 +162,7 @@ const ShareSchema = z.object({
 export const logShare = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => ShareSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("share_events").insert({
       visitor_hash: data.visitorId,
       channel: data.channel,

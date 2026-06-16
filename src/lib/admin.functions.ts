@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { REWARDS } from "@/lib/rewards";
 
 const PH_MOBILE = /^(\+?63|0)?9\d{9}$/;
@@ -39,6 +38,7 @@ export const updateSignup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => UpdateSignupSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
 
     // Admin gate via has_role RPC (RLS-respecting)
@@ -112,6 +112,7 @@ export const voidSignup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => VoidSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -158,6 +159,7 @@ export const unvoidSignup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => UnvoidSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -182,6 +184,7 @@ export const unsubscribeMailing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => UnsubSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -203,6 +206,7 @@ export const resubscribeMailing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ResubSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,

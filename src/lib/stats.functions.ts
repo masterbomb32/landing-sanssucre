@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export const getReservationCount = createServerFn({ method: "GET" }).handler(async () => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { count, error } = await supabaseAdmin
     .from("signups")
     .select("id", { count: "exact", head: true });

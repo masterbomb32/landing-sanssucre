@@ -13,7 +13,7 @@ import { useTrackVisit } from "@/hooks/use-track-visit";
 import { siteCopy as defaults } from "@/lib/site-copy";
 import { useSiteCopy } from "@/hooks/use-site-copy";
 import { Countdown } from "@/components/countdown";
-import { getReservationCount } from "@/server/stats.functions";
+import { getReservationCount } from "@/lib/stats.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({

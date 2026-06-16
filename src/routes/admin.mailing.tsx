@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format-date";
 import { downloadCsv, csvDate } from "@/lib/csv";
 import { toast } from "sonner";
-import { unsubscribeMailing, resubscribeMailing } from "@/server/admin.functions";
+import { unsubscribeMailing, resubscribeMailing } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin/mailing")({
   head: () => ({ meta: [{ title: "Mailing list — Admin" }, { name: "robots", content: "noindex" }] }),

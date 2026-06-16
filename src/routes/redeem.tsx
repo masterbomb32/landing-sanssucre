@@ -19,8 +19,8 @@ import {
   getCacheFetchedAt,
 } from "@/lib/redeem-cache";
 import { enqueue, listOutbox, outboxSize, replaceOutbox } from "@/lib/redeem-outbox";
-import { prefetchUnredeemed, redeemBatch } from "@/server/redeem.functions";
-import { logRedeemConflict } from "@/server/conflict.functions";
+import { prefetchUnredeemed, redeemBatch } from "@/lib/redeem.functions";
+import { logRedeemConflict } from "@/lib/conflict.functions";
 
 export const Route = createFileRoute("/redeem")({
   head: () => ({

@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { notifyStaffSilently } from "@/lib/push.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -16,6 +15,7 @@ const FeedbackSchema = z.object({
 export const submitFeedback = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => FeedbackSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.rpc("submit_testimonial_for_code", {
       p_code: data.code,
       p_rating: data.rating,
@@ -39,6 +39,7 @@ const CheckSchema = z.object({ code: z.string().trim().min(8).max(64) });
 export const fetchFeedbackStatus = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => CheckSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signup } = await supabaseAdmin
       .from("signups")
       .select("id")
@@ -58,6 +59,7 @@ const PrefillSchema = z.object({ code: z.string().trim().min(8).max(64) });
 export const fetchSignupForCode = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => PrefillSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signup } = await supabaseAdmin
       .from("signups")
       .select("id,name,redeemed_at")
@@ -88,6 +90,7 @@ const PublicStorySchema = z.object({
 export const submitPublicStory = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => PublicStorySchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.rpc("submit_testimonial_public", {
       p_name: data.name,
       p_quote: data.quote,
@@ -112,6 +115,7 @@ const PrefetchSchema = z.object({ pin: z.string().min(4).max(6) });
 export const prefetchUnredeemed = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => PrefetchSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // Re-verify PIN server-side so unauth callers cannot enumerate codes.
     const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", {
       p_pin: data.pin,
@@ -165,6 +169,7 @@ export type BatchOutcome = {
 export const redeemBatch = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => BatchSchema.parse(input))
   .handler(async ({ data }): Promise<{ results: BatchOutcome[] }> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", {
       p_pin: data.pin,
     });
@@ -221,6 +226,7 @@ export const notifyRedeem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => NotifyRedeemSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     let name = data.name;
     if (!name) {
       const { data: row } = await supabaseAdmin

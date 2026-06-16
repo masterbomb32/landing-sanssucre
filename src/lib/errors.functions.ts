@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const LogSchema = z.object({
   source: z.enum(["client", "server"]).default("client"),
@@ -17,6 +16,7 @@ const LogSchema = z.object({
 export const logClientError = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => LogSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     try {
       await supabaseAdmin.from("error_log").insert({
         source: data.source,
@@ -44,6 +44,7 @@ export const listErrors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ListSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -65,6 +66,7 @@ export const listErrors = createServerFn({ method: "POST" })
 export const clearErrors = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,
@@ -88,6 +90,7 @@ export const getFunnel = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => FunnelSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { supabase, userId } = context;
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: userId,

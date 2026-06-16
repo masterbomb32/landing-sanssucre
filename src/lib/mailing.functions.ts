@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const SubscribeSchema = z.object({
   code: z.string().trim().min(8).max(64),
@@ -10,6 +9,7 @@ const SubscribeSchema = z.object({
 export const subscribeMailingList = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SubscribeSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: signup, error: sErr } = await supabaseAdmin
       .from("signups")
       .select("id, email")

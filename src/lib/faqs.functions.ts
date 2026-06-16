@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function assertAdmin(supabase: ReturnType<typeof Object>, userId: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,6 +25,7 @@ export const upsertFaq = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => UpsertSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const hasDraftFieldProvided =
       data.draft_question !== undefined || data.draft_answer !== undefined;
@@ -77,6 +77,7 @@ export const deleteFaq = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => DeleteSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { error } = await supabaseAdmin.from("faqs").delete().eq("id", data.id);
     if (error) throw new Error("Could not delete FAQ.");
@@ -89,6 +90,7 @@ export const publishFaqDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { data: row, error: readErr } = await supabaseAdmin
       .from("faqs")
@@ -118,6 +120,7 @@ export const discardFaqDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => IdSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { error } = await supabaseAdmin
       .from("faqs")
@@ -135,6 +138,7 @@ export const discardFaqDraft = createServerFn({ method: "POST" })
 export const getFaqsForAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { data, error } = await supabaseAdmin
       .from("faqs")
@@ -149,6 +153,7 @@ export const getFaqsForAdmin = createServerFn({ method: "GET" })
 export const getFaqsForPreview = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { data, error } = await supabaseAdmin
       .from("faqs")

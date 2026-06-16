@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { moderateTestimonial, deleteTestimonial } from "@/server/testimonials.functions";
+import { moderateTestimonial, deleteTestimonial } from "@/lib/testimonials.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Trash2, Eye, EyeOff, Star, Sparkles } from "lucide-react";

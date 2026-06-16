@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function assertAdmin(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,6 +25,7 @@ export const moderateTestimonial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => ModerateSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (data.published !== undefined) patch.published = data.published;
@@ -43,6 +43,7 @@ export const deleteTestimonial = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => DeleteSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await assertAdmin(context.supabase, context.userId);
     const { error } = await supabaseAdmin.from("testimonials").delete().eq("id", data.id);
     if (error) throw new Error("Could not delete testimonial.");

@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { listErrors, clearErrors } from "@/server/errors.functions";
+import { listErrors, clearErrors } from "@/lib/errors.functions";
 import { formatDateTime } from "@/lib/format-date";
 
 export const Route = createFileRoute("/admin/errors")({

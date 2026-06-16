@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const Schema = z.object({
   pin: z.string().min(4).max(6),
@@ -11,6 +10,7 @@ const Schema = z.object({
 export const logRedeemConflict = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => Schema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ok, error: pinErr } = await supabaseAdmin.rpc("verify_staff_pin", { p_pin: data.pin });
     if (pinErr || ok !== true) throw new Error("INVALID_PIN");
 

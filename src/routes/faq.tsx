@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { getFaqsForPreview } from "@/server/faqs.functions";
+import { getFaqsForPreview } from "@/lib/faqs.functions";
 import {
   Accordion,
   AccordionContent,
