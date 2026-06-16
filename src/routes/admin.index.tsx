@@ -38,9 +38,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { updateSignup, voidSignup, unvoidSignup } from "@/server/admin.functions";
-import { getCountryBreakdown } from "@/server/dashboard.functions";
-import { notifyRedeem } from "@/server/redeem.functions";
+import { updateSignup, voidSignup, unvoidSignup } from "@/lib/admin.functions";
+import { getCountryBreakdown } from "@/lib/dashboard.functions";
+import { notifyRedeem } from "@/lib/redeem.functions";
 import { downloadCsv, csvDate } from "@/lib/csv";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useStaffPush } from "@/hooks/use-staff-push";

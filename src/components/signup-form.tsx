@@ -20,7 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 
 import { REWARDS } from "@/lib/rewards";
-import { createSignup } from "@/server/signup.functions";
+import { createSignup } from "@/lib/signup.functions";
 import { siteCopy } from "@/lib/site-copy";
 import { Link } from "@tanstack/react-router";
 

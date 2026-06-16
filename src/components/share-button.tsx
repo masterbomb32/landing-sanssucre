@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { siteCopy } from "@/lib/site-copy";
-import { logShare } from "@/server/signup.functions";
+import { logShare } from "@/lib/signup.functions";
 import { getVisitorId } from "@/lib/visitor";
 
 type Channel = "native" | "copy" | "whatsapp" | "facebook" | "dialog_open";

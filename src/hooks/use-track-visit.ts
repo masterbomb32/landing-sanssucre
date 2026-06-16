@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { logVisit } from "@/server/signup.functions";
+import { logVisit } from "@/lib/signup.functions";
 import { getVisitorId } from "@/lib/visitor";
 
 export function useTrackVisit(path: string) {

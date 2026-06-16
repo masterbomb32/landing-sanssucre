@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, Star, ShieldCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { submitPublicStory, fetchSignupForCode } from "@/server/redeem.functions";
+import { submitPublicStory, fetchSignupForCode } from "@/lib/redeem.functions";
 
 const searchSchema = z.object({
   code: z.string().trim().min(8).max(64).optional().catch(undefined),

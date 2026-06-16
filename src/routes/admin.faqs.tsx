@@ -7,7 +7,7 @@ import {
   publishFaqDraft,
   discardFaqDraft,
   getFaqsForAdmin,
-} from "@/server/faqs.functions";
+} from "@/lib/faqs.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { logClientError } from "@/server/errors.functions";
+import { logClientError } from "@/lib/errors.functions";
 import { getVisitorId } from "@/lib/visitor";
 
 const RECENT = new Map<string, number>();
